@@ -1,1 +1,792 @@
-# Simulado-PE
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulado de Inspeção - Douglas</title>
+    <style>
+        /* Variáveis de Cores para facilitar a troca de tema */
+        :root {
+            --bg-body: #f4f7f6;
+            --bg-container: #ffffff;
+            --text-main: #333333;
+            --text-secondary: #7f8c8d;
+            --border-color: #eeeeee;
+            --option-bg: #f9f9f9;
+            --option-hover: #eef2f3;
+        }
+
+        /* Cores do Modo Escuro */
+        [data-theme="dark"] {
+            --bg-body: #121212;
+            --bg-container: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --border-color: #333333;
+            --option-bg: #2a2a2a;
+            --option-hover: #3d3d3d;
+        }
+
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: var(--bg-body); color: var(--text-main); line-height: 1.6; padding: 10px; transition: 0.3s; }
+        .container { max-width: 800px; margin: 20px auto; background: var(--bg-container); padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); position: relative; }
+        .hidden { display: none; }
+        
+        h1 { color: #3498db; text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        
+        /* Botão de Alternar Tema */
+        .theme-toggle { position: fixed; top: 20px; right: 20px; background: #3498db; color: white; border: none; padding: 10px; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-size: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+
+        .btn-menu { display: block; width: 100%; padding: 15px; margin: 10px 0; background-color: #3498db; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        .btn-menu:hover { background-color: #2980b9; }
+        
+        .btn-acumulado { background-color: #e74c3c !important; border: 2px solid #c0392b; }
+        .btn-continuar { background-color: #e67e22 !important; border: 2px solid #d35400; }
+        .badge { background: white; color: #e74c3c; padding: 2px 10px; border-radius: 20px; margin-left: 10px; font-size: 14px; }
+        
+        .option { background: var(--option-bg); border: 2px solid var(--border-color); padding: 12px; margin: 8px 0; border-radius: 8px; cursor: pointer; transition: 0.2s; color: var(--text-main); }
+        .option:hover { background: var(--option-hover); border-color: #3498db; }
+        
+        /* Feedback */
+        .correct-fill { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724 !important; font-weight: bold; }
+        .wrong-fill { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24 !important; font-weight: bold; }
+        .disabled { pointer-events: none; opacity: 0.8; }
+        
+        .nav-btns { display: flex; justify-content: space-between; margin-top: 25px; gap: 10px; }
+        .control-btns { display: flex; justify-content: center; margin-top: 15px; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 15px; }
+        
+        button { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-prev { background: #95a5a6; color: white; flex: 1; }
+        .btn-next { background: #27ae60; color: white; flex: 1; }
+        .btn-exit { background: #e74c3c; color: white; }
+        .btn-pause { background: #f39c12; color: white; }
+        
+        .correct { color: #27ae60; font-weight: bold; }
+        .wrong { color: #e74c3c; font-weight: bold; }
+        .result-card { border-bottom: 1px solid var(--border-color); padding: 15px 0; }
+        
+        .settings-box { margin-top: 30px; padding: 15px; border: 1px dashed var(--text-secondary); border-radius: 8px; text-align: center; }
+        .btn-clear { background: none; color: #e74c3c; text-decoration: underline; font-size: 12px; margin: 5px; border: none; cursor: pointer; }
+
+        /* Placar Estilo */
+        .score-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .score-board { display: flex; gap: 8px; }
+        .score-item { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 8px; font-weight: bold; font-size: 16px; }
+        .score-correct { background-color: rgba(40, 167, 69, 0.2); color: #28a745; border: 1px solid #28a745; }
+        .score-wrong { background-color: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid #dc3545; }
+    </style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" title="Trocar Tema">🌓</button>
+
+<div id="menu" class="container">
+    <h1>Simulado de Inspeção (PM)</h1>
+    
+    <button id="btnRefazerTudoErrado" class="btn-menu btn-acumulado hidden" onclick="iniciarSimulado('erros_globais')">
+        🚩 REFAZER QUESTÕES ERRADAS <span id="contadorGlobal" class="badge">0</span>
+    </button>
+
+    <button id="btnRetomar" class="btn-menu btn-continuar hidden" onclick="retomarSimulado()">
+        ⚡ CONTINUAR ONDE PAREI
+    </button>
+
+    <hr style="border:0; border-top: 1px solid #eee; margin: 20px 0;">
+
+    <button class="btn-menu" onclick="iniciarSimulado('total')">1 - Simulado Completo (Todas)</button>
+    
+    <div style="margin: 20px 0; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; text-align: center;">
+        <label>2 - Escolher Prova: </label>
+        <select id="escolhaProva" style="padding: 8px; border-radius: 4px; background: var(--option-bg); color: var(--text-main);">
+             <option value="1">Prova 01</option>
+            <option value="2">Prova 02</option>
+            <option value="3">Prova 03</option>
+            <option value="4">Prova 04</option>
+            <option value="5">Prova 05</option>
+            <option value="6">Prova 06</option>
+            <option value="7">Prova 07</option>
+            <option value="8">Prova 08</option>
+            <option value="9">Prova 09</option>
+            <option value="10">Prova 10</option>
+            <option value="11">Prova 11</option>
+</select>
+        <button class="btn-menu" style="width: auto; display: inline-block; margin-left: 10px; padding: 8px 20px;" onclick="iniciarSimulado('especifica')">Iniciar</button>
+    </div>
+    <button class="btn-menu" onclick="iniciarSimulado('random')">3 - 40 Questões Aleatórias</button>
+
+    <div class="settings-box">
+        <p style="margin: 0; font-weight: bold; font-size: 13px; color: var(--text-secondary);">⚙️ Gerenciar Dados:</p>
+        <button class="btn-clear" onclick="limparApenasErros()">Limpar Banco de Erros</button>
+        <button class="btn-clear" onclick="resetTotal()">Reset Total (Zerar Tudo)</button>
+    </div>
+</div>
+
+<div id="quiz" class="container hidden">
+    <div class="score-header">
+        <div id="progresso" style="font-weight: bold; color: var(--text-secondary);"></div>
+        <div class="score-board">
+            <div class="score-item score-correct">
+                <span>✓</span> <span id="count-correct">0</span>
+            </div>
+            <div class="score-item score-wrong">
+                <span>✗</span> <span id="count-wrong">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="pergunta" style="font-size: 18px; margin-bottom: 20px; font-weight: 500;"></div>
+    <div id="opcoes"></div>
+    
+    <div class="nav-btns">
+        <button class="btn-prev" id="voltar" onclick="mudarQuestao(-1)">← Voltar</button>
+        <button class="btn-next" id="avancar" onclick="mudarQuestao(1)">Próxima →</button>
+        <button class="btn-next hidden" id="finalizar" onclick="verResultado()">Finalizar Simulado</button>
+    </div>
+
+    <div class="control-btns">
+        <button class="btn-exit" onclick="sairSemSalvar()">Sair</button>
+        <button class="btn-pause" onclick="salvarEPausar()">Salvar e Pausar</button>
+    </div>
+</div>
+
+<div id="resultado" class="container hidden">
+    <h2 id="placar" style="text-align: center;"></h2>
+    <div id="detalhes"></div>
+    <button class="btn-menu" onclick="location.reload()">Voltar ao Menu</button>
+</div>
+    
+<script>
+const bancoQuestoes = [ 
+    // PROVA 01 
+  {p:1, q:"1- Indique se afirmação abaixo é verdadeira ou falsa. Qualquer peça que tenha sido examinada por meio de partículas magnéticas dispensa desmagnetização.", o:["A) verdadeiro", "B) falso."], r:1},
+  {p:1, q:"2- Indique se a afirmação abaixo é verdadeira ou falsa. O teste da bússola para verificar se uma peça está magnetizada não é valido se a peça estiver magnetizada circularmente.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:1, q:"3- Indique se a afirmação abaixo é verdadeira ou falsa. Partes de alumínio são facilmente examinadas por meio de partículas magnéticas.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:1, q:"4- Indique se a afirmação abaixo é verdadeira ou falsa. Para detectar falhas longitudinais em uma barra de aço, o método de magnetização circular é o mais indicado.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:1, q:"5- Marque uma das causas de indicações não relevantes.", o:["A) falta de fusão.", "B) porosidade.", "C) amperagem muito alta.", "D) trinca."], r:2},
+  {p:1, q:"6- Várias peças foram magnetizadas e deixadas sobre uma bancada enquanto aguardam a aplicação das partículas magnéticas e a inspeção. Por que que não se deve atritar ou tocar umas nas outras enquanto não tiverem sido examinadas?", o:["A) para facilitar o manuseio.", "B) para não estragar o preparo da superfície da peça, feito para executar o exame por meio de partículas magnéticas.", "C) para que não ocorra a magnetização que dá origem a escrita magnética.", "D) todas as respostas estão erradas."], r:2},
+  {p:1, q:"7- Que é magnetismo residual?", o:["A) é o magnetismo que possuem as peças metálicas devido ao campo magnético terrestre.", "B) é o tipo de magnetismo característico dos materiais diamagnéticos.", "C) é o magnetismo que a peça apresenta nas vizinhanças dos defeitos, e que permite sua detecção.", "D) é o magnetismo que permanece no circuito magnético depois da remoção da força magnetizante."], r:3},
+  {p:1, q:"8- O ponto a partir do qual a intensidade do campo magnético produzido numa peça permanece invariável por mais que cresça o valor da força magnetizante é denominado:", o:["A) ponto residual.", "B) ponto de saturação.", "C) ponto remanescente.", "D) ponto saliente."], r:1},
+  {p:1, q:"9- O campo magnético existente nas proximidades de uma barra magnetizada é mais denso:", o:["A) na extremidade da barra.", "B) no meio da barra.", "C) aproximadamente no centro da barra."], r:0},
+  {p:1, q:"10- Na localização de defeitos de uma peça, sua magnetização deve ser feita de modo que o plano principal das possíveis descontinuidades:", o:["A) seja perpendicular as linhas de força.", "B) seja paralelo as linhas de força."], r:0},
+  {p:1, q:"11- Indique na relação abaixo o caso em que pode ser usada a magnetização de peças pelo método residual.", o:["A) peças de material de baixa retentividade.", "B) peças de formato irregular.", "C) para avaliar as indicações encontradas no exame de peças pelo método contínuo.", "D) peças muito tencionadas."], r:2},
+  {p:1, q:"12- Quando circula corrente elétrica numa bobina, a direção das linhas de força induzidas numa barra colocada dentro da bobina:", o:["A) circular.", "B) longitudinal.", "C) vetorial.", "D) desconhecida."], r:1},
+  {p:1, q:"13- O exame por meio de partículas magnéticas não é indicado para detecção de:", o:["A) dupla laminação.", "B) soldas.", "C) descontinuidades subsuperficiais.", "D) dobras de laminação."], r:0},
+  {p:1, q:"14- O exame por meio de partículas magnéticas fluorescentes difere do exame por meio de partículas magnéticas comuns no que diz respeito ao uso de:", o:["A) correntes mais altas.", "B) luz negra.", "C) partículas mais finamente divididas nas cores preta, cinza.", "D) máquina diferente."], r:1},
+  {p:1, q:"15- Uma peça se tornou magnetizada após ser submetida a uma força magnetizante. Este magnetismo residual é, em relação a força magnetizante que atuava na peça:", o:["A) da mesma intensidade.", "B) mais fraco.", "C) mais forte."], r:1},
+  {p:1, q:"16- Que tipo de magnetização é produzido pela passagem de corrente elétrica através de uma peça:", o:["A) circular.", "B) longitudinal."], r:0},
+  {p:1, q:"17- Um banho para lavar uma peça após o seu exame por meio de partículas magnéticas:", o:["A) é desnecessário.", "B) é necessário para remover as partículas mais quando isso é requerido.", "C) promove a lubrificação da peça.", "D) é necessário para remover o magnetismo residual."], r:1},
+  {p:1, q:"18- A indicação produzida por um defeito superficial é:", o:["A) fina e distincta.", "B) alta e larga.", "C) larga e indefinida.", "D) em forma de cruz."], r:0},
+  {p:1, q:"19- Marque a sequência básica dos exames por meio de partículas magnéticas. 1- remoção do penetrante. 2- inspeção. 3- exposição 4- limpeza e magnetização 5- fixação e lavagem 6- aplicação de partículas magnéticas 7- desmagnetização", o:["A) 4, 7, 5, 3.", "B) 4, 6, 7, 2.", "C) 4, 6, 2, 7.", "D) 4, 6, 5, 1."], r:2},
+  {p:1, q:"20- Indique um método que produza magnetismo circular:", o:["A) passando corrente através da peça em exame.", "B) colocando a peça num solenóide.", "C) passando corrente através de um condutor enrolado na peça.", "D) uso da técnica do eletroimã."], r:0},
+  {p:1, q:"21- Qual o tipo de corrente geralmente usada em aparelhos desmagnetizadores:", o:["A) corrente alternada.", "B) corrente contínua.", "C) corrente contínua de amperagem crescente.", "D) corrente alternada de alta voltagem, geralmente 3.800 V."], r:0},
+  {p:1, q:"22- Quando estiver sendo feito exame por via úmida com processo contínuo, o fluxo da suspensão que banha a peça, proveniente de uma mangueira, deve ser interrompido:", o:["A) alguns segundos antes da interrupção da força magnetizante.", "B) 30 segundos após a interrupção da força magnetizante.", "C) imediatamente antes da aplicação da corrente.", "D) imediatamente após a aplicação da corrente."], r:0},
+  {p:1, q:"23- Nas vizinhanças de uma bobina, o local onde o campo magnético possui maior intensidade:", o:["A) na periferia, no lado externo.", "B) na periferia, no lado interno.", "C) no centro.", "D) na extremidade correspondente ao pólo sul."], r:2},
+  {p:1, q:"24- No exame por partículas magnéticas, a limpeza da peça deve ser feita:", o:["A) antes e depois do exame.", "B) depois.", "C) antes.", "D).não precisa fazer."], r:0},
+  {p:1, q:"25- O método mais eficiente para examinar peças de material de baixa retentividade por meio de partículas magnéticas é:", o:["A) exame por via seca com magnetização contínua.", "B) exame por via seca com magnetização residual.", "C) exame por via úmida com magnetização contínua.", "D) exame por via úmida com magnetização residual."], r:2},
+  {p:1, q:"26- Indique o principal fator a considerar na seleção da técnica a ser adotada para examinar uma peça por meio de partículas magnéticas.", o:["A) valor da densidade de fluxo.", "B) tipo de corrente.", "C) direção do campo magnético.", "D) tamanho da peça."], r:2},
+  {p:1, q:"27- Indique se afirmação abaixo é verdadeira ou falsa. O exame por via úmida com magnetização residual pode ser aplicado em qualquer peça de aço.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:1, q:"28- Indique se afirmação abaixo é verdadeira ou falsa. Um defeito localizado a 6mm abaixo da superfície de uma barra de 12mm de diâmetro não será detectado pelo exame de partículas magnéticas.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:1, q:"29- Indique se afirmação abaixo é verdadeira ou falsa. As linhas de força do campo magnético sempre formam um circuito fechado.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:1, q:"30- Indique se afirmação abaixo é verdadeira ou falsa. Em qualquer indicação obtida num exame por meio de partículas magnéticas sempre existe um polo norte e um polo sul.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:1, q:"31- Indique se afirmação abaixo é verdadeira ou falsa. Qualquer peça deve ser desmagnetizada após sofrer exame por meio de partículas magnéticas, excetuando-se as que posteriormente receberem tratamento térmico.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:1, q:"32- Indique se afirmação abaixo é verdadeira ou falsa. Os defeitos existentes na superfície de uma peça podem ser detectados efetuando-se exame por meio de partículas magnéticas usando corrente alternada.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:1, q:"33- Indique se afirmação abaixo é verdadeira ou falsa. Depois de serem examinadas por meio de partículas magnéticas, as peças devem receber tratamento de limpeza.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:1, q:"34- Indique se afirmação abaixo é verdadeira ou falsa. As características das suspensões empregadas no exame por via úmida devem ser verificadas periodicamente.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:1, q:"35- Indique se afirmação abaixo é verdadeira ou falsa. A corrente de magnetização deve ter a menor voltagem possível.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:1, q:"36- Indique se afirmação abaixo é verdadeira ou falsa. A eficiência de um aparelho desmagnetizador é maior nas proximidades do lado interno da bobina.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:1, q:"37- Indique se afirmação abaixo é verdadeira ou falsa. Todas as peças que apresentarem indicações ao serem examinadas por meio de partículas magnéticas devem ser reparadas.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:1, q:"38- Indique se afirmação abaixo é verdadeira ou falsa. A presença de carepa em peças submetidas a exame por meio de partículas magnéticas causa frequentemente a formação de indicações.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:1, q:"39- Indique se afirmação abaixo é verdadeira ou falsa. Quando uma peça vai ser examinada com partículas magnéticas, a limpeza de sua superfície é desnecessária desde que esteja protegida com graxa.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:1, q:"40- O método de magnetização a ser usado em partes feitas de aço doce com baixa retentividade é o:", o:["A) contínuo.", "B) residual."], r:0}
+
+//PROVA 02
+  {p:2, q:"1- Quando uma peça é magnetizada por uma bobina, o campo magnético induzido é:", o:["A) residual.", "B) longitudinal.", "C) retilíneo.", "D) circular."], r:1},
+  {p:2, q:"2- Para detectar defeitos longitudinais no interior de um furo existente numa peça deve-se:", o:["A) aumentar a amperagem.", "B) magnetizar a peça usando uma bobina.", "C) estabelecer o fluxo de corrente num condutor que passe pelo centro do furo.", "D) passar a corrente através da peça."], r:2},
+  {p:2, q:"3- Qual a razão para que haja bom contato elétrico na maior área possível, ao examinar uma peça por meio de partículas magnéticas, utilizando a técnica de contato direto?", o:["A) para que não haja fuga do campo magnético.", "B) para evitar que seja desnecessário desmagnetizar a peça posteriormente.", "C) evitar o superaquecimento da peça nos pontos de injeção de corrente e permitir o uso de correntes mais intensas.", "D) para fechar o circuito magnético com maior eficiência."], r:2},
+  {p:2, q:"4- Indique se afirmação abaixo é verdadeira ou falsa. O preparo da suspensão de partículas magnéticas, no caso de utilizar pasta misturada com óleo, pode ser feito diretamente no tanque do equipamento.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:2, q:"5- Indique a maneira mais simples para verificar se uma peça é magnetizável.", o:["A) verificando se uma peça é atraída por um ímã.", "B) aplicando partícula magnética na peça.", "C) verificando se uma peça similar é atraída pela peça em questão.", "D) usando um medidor de campo magnético."], r:0},
+  {p:2, q:"6- Qual é a maneira de verificar se uma peça foi desmagnetizada?", o:["A) application de um ímã na peça.", "B) verificação por um medidor de campo magnético.", "C) tirando uma radiografia da peça.", "D) por uma observação cuidadosa de como a partícula magnética se distribui na superfície da peça."], r:1},
+  {p:2, q:"7- Que é um exame por meio de partículas magnéticas?", o:["A) consiste na magnetização e exame de pequenas peças.", "B) é um exame não destrutivo aplicável a materiais ferromagnéticos.", "C) consiste no exame de pequenas partículas de materiais ferromagnéticos."], r:1},
+  {p:2, q:"8- Em que consiste o exame por via úmida com magnetismo residual?", o:["A) consiste em umedecer as peças que apresentaram magnetismo residual.", "B) consiste na aplicação de suspensão de partículas magnéticas em peças de materiais ferromagnéticos após interromper a corrente elétrica de magnetização.", "C) consiste no exame do resíduo do tanque da suspensão.", "D) consiste na aplicação de partícula magnética na forma de pó em peças de materiais ferromagnéticos após interromper a corrente elétrica de magnetização."], r:1},
+  {p:2, q:"9- no exame por via seca é mais usado", o:["A) corrente contínua correspondente a retificação de meia onda de corrente alternada de 110 volts.", "B) corrente de alta frequência tipo VHF.", "C) corrente de alta voltagem e baixa amperagem.", "D) corrente contínua correspondente a retificação completa das ondas de corrente alternada, trifásica de 440 volts."], r:0},
+  {p:2, q:"10- O exame por via úmida com magnetização contínua é caracterizado:", o:["A) pelo método de aplicação da solução.", "B) pelo contínuo umedecimento da peça.", "C) pela aplicação da suspensão enquanto circula a corrente de magnetização.", "D) pela manutenção do fluxo da suspensão após o corte da corrente de magnetização."], r:2},
+  {p:2, q:"11- Em que consiste o exame por via seca", o:["A) consiste na obtenção de corrente de magnetização por meio de baterias secas.", "B) consiste na obtenção de corrente de magnetização por meio de bateria seca.", "C) consiste na utilização de partícula magnética na forma de pó para examinar peças de material ferromagnético.", "D) consiste em secar previamente as peças antes de aplicar a corrente de magnetização."], r:2},
+  {p:2, q:"12- Por que deve ser feita a limpeza das peças antes de magnetizá-las?", o:["A) para reduzir o consumo de energia de magnetização.", "B) para reduzir o aparecimento de indicações falsas.", "C) para não sujar o local de trabalho.", "D) para facilitara limpeza após o exame."], r:1},
+  {p:2, q:"13- Indique as razões que justifiquem a desmagnetização prévia de peças que serão examinadas por meio de partículas magnéticas.", o:["A) facilitar o manuseio de peças grandes.", "B) assegurar a eliminação de indicações não relevantes permanecendo as demais.", "C) impedir a formação de correntes elétricas geradas pelo movimento relativo de peças magnetizadas com outras peças metálicas.", "D) facilitar a limpeza de peças paramagnéticas."], r:1},
+  {p:2, q:"14- Por que se usa luz negra no exame com partículas magnéticas fluorescentes?", o:["A) para proteger os olhos do operador.", "B) para que as indicações sejam detectadas com maior facilidade.", "C) para identificar quais indicações não relevantes correspondem à defeitos.", "D) para salientar o campo magnético."], r:1},
+  {p:2, q:"15- Por que deve ser feita a limpeza das peças após sua desmagnetização?", o:["A) para evitar a corrosão das peças examinadas.", "B) para reaproveitar as partículas magnéticas da suspensão.", "C) para assegurar a remoção das partículas magnéticas.", "D) para evitar a ocorrência de trincas durante o tratamento térmico."], r:2},
+  {p:2, q:"16- Que se entende por veículo líquido", o:["A) um líquido que possui partículas magnéticas em suspensão, por meio do qual elas são transportadas para a superfície da peça em exame.", "B) um product para remover as partículas magnéticas da superfície da peça após executado o exame.", "C) um produto para limpeza da peça antes do exame.", "D) um veículo para transporte de líquido."], r:0},
+  {p:2, q:"17- Quando uma corrente elétrica circula num condutor de cobre", o:["A) forma-se linhas de força paralelas ao eixo do condutor.", "B) forma-se um campo magnético em torno do condutor.", "C) forma-se polos magnéticos no condutor.", "D) forma-se um campo longitudinal."], r:1},
+  {p:2, q:"18- A desmagnetização de uma peça geralmente não é necessária se", o:["A) a peça for de aço carbono.", "B) a peça for pequena.", "C) for utilizado o método de magnetização contínua.", "D) a peça receberá tratamento para aumento de dureza após o exame."], r:3},
+  {p:2, q:"19- A intensidade do campo magnético é determinada", o:["A) pela amperagem da corrente de magnetização.", "B) pelo tempo de circulação da corrente.", "C) pela voltagem da corrente de magnetização.", "D) pela dioptria da peça."], r:0},
+  {p:2, q:"20- Qual a direção das linhas de força do campo magnético em relação à direção da corrente de magnetização", o:["A) ângulo de 45° .", "B) todas as direções.", "C) normal.", "D) paralela."], r:2},
+  {p:2, q:"21- A magnetização por meio de um condutor central", o:["A) deve ser utilizada apenas para detecção de defeitos cuja direção principal é paralela as linhas de força do campo magnético produzido.", "B) não é recomendável, tendo em vista que o calor gerado pela passagem de corrente no condutor prejudica a eficiência do exame.", "C)constitui um meio efetivo de magnetização de peças com vistas a determinar a presença de defeitos em superfícies internas.", "D)é a maneira correta de magnetizar peças de materiais diamagnéticos com vista à detecção de defeitos internos."], r:2},
+  {p:2, q:"22)-Na magnetização circular, a força magnetizante é expressa em ampères. Qual é o termo usado para expressar a força de magnetização na magnetização longitudinal.", o:["A) volts.", "B) ampere-espiras.", "C) volts-amperes.", "D) ampères."], r:1},
+  {p:2, q:"23)-Indique se a afirmação abaixo é verdadeira ou falsa. Todas as partes que apresentem indicações devem ser esmerilhadas.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:2, q:"24)-Indique se a afirmação abaixo é verdadeira ou falsa. É desnecessário remover a graxa que protege a superfície das peças contra corrosão para submetê-las ao exame por meio de partículas magnéticas.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:2, q:"25)-Indique se a afirmação abaixo é verdadeira ou falsa. O processo empregado para desmagnetizar uma peça consiste simplesmente em colocar a peça no interior de uma bobina, estabelecendo e interrompendo o circuito logo após a passagem da corrente.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:2, q:"26)-Quando a desmagnetização de uma peça é feita pela técnica do contato direto, a força magnetizante usada para desmagnetizar deve ser.", o:["A) igual a força magnetizadora que magnetizou a peça.", "B) maior do que a força magnetizadora que magnetizou a peça.", "C) e qualquer valor.", "D) menor do que a força magnetizadora que magnetizou a peça."], r:1},
+  {p:2, q:"27)-Indique se a afirmação abaixo é verdadeira ou falsa. O procedimento para examinar uma peça por meio de partículas magnéticas deve ser sempre previamente qualificado.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:2, q:"28)-Indique se a afirmação abaixo é verdadeira ou falsa. O pó magnético de cor preta dá um bom contraste em superfícies escurecidas ou oxidadas por tratamento térmico.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:2, q:"29) Se uma barra magnética é curvada de modo a assumir forma circular, estando suas extremidades encostadas uma na outra:", o:["A) ainda assim terá um polo sul e um polo norte.", "B) sua magnetização aumentará.", "C) haverá apenas um polo no centro do círculo.", "D) sua polaridade desaparecerá."], r:3},
+  {p:2, q:"30- O aparecimento de uma trinca numa peça em forma de anel, que foi magnetizada de modo que as linhas de força percorrem o anel, determinará:", o:["A) a formação de polos magnéticos.", "B) o aparecimento de um terceiro polo.", "C) a alteração da posição dos polos magnéticos existentes no anel.", "D) o desaparecimento do campo magnético."], r:0},
+  {p:2, q:"31- A passagem de corrente elétrica num condutor reto", o:["A) determina a formação de polos.", "B) faz com que se desenvolva um campo magnético longitudinal junto ao condutor.", "C) faz com que se desenvolva um campo magnético circular em torno do condutor.", "D) forma um campo magnético circular se a corrente for alternada e longitudinal se a corrente for contínua."], r:2},
+  {p:2, q:"32- A passagem de corrente elétrica num condutor que dá uma volta numa peça faz que se desenvolva um campo magnético na peça se:", o:["A) a peça for de seção circular.", "B) a peça for de material ferromagnético.", "C) a corrente for muito fraca.", "D) a peça estiver trincada."], r:1},
+  {p:2, q:"33- A magnetização circular é indicada para detecção de", o:["A) defeitos existentes próximos ao eixo de barras cilíndricas.", "B) trincas longitudinais.", "C) trincas circunferenciais.", "D) falhas em tubulações."], r:1},
+  {p:2, q:"34- No exame por meio de partículas magnéticas, qual dos defeitos relacionados abaixo é mais difícil de detectar, supondo que estejam na mesma posição relativa, numa peça pequena:", o:["A) risco.", "B) trinca subsuperficial.", "C) trinca superficial.", "D) lasca."], r:0},
+  {p:2, q:"35- Usando-se a magnetização circular, a corrente para o teste de peças é geralmente determinada:", o:["A) pelo comprimento da peça.", "B) pelo tipo de material da peça.", "C) pelo diâmetro da peça.", "D) pela forma da peça."], r:2},
+  {p:2, q:"36- O campo magnético no interior de uma bobina é afetado", o:["A) todas as respostas estão certas.", "B) pelo diâmetro da bobina.", "C) pelo número de espiras da bobina.", "D) pela corrente elétrica que circula na bobina."], r:0},
+  {p:2, q:"37- O líquido empregado no exame por via úmida e corretamente denominado:", o:["A) líquido magnético.", "B) liquid de lavagem.", "C) suspensão.", "D) solução."], r:2},
+  {p:2, q:"38- A suspensão usada no exame por via úmida deve ser uniforme:", o:["A) para que o fluxo magnético seja uniforme.", "B) para assegurar maior mobilidade das partículas magnéticas.", "C) porque diferentes composições da suspensão levarão a diferentes resultados no exame.", "D) caso contrário ocorrerão indicações de trinca no local onde não existem."], r:2},
+  {p:2, q:"39- A eficiência da detecção de defeitos profundos em soldas depende", o:["A) da limpeza da superfície que devem estar isentas de escória, carepa, graxa, etc.", "B) da técnica de soldagem.", "C) do tratamento térmico que a peça tiver recebido.", "D) todas estão certas."], r:0},
+  {p:2, q:"40- Indique se a afirmação abaixo é verdadeira ou falsa. A magnetização de uma barra, de forma que seja mínimo o vazamento de campo magnético é obtida colocando a barra entre os contactores de uma máquina especial para exame por meio de partículas magnéticas.", o:["A) verdadeiro.", "B) falso."], r:0}
+
+//PROVA 03
+  {p:3, q:"1- Uma peça é examinada por meio de partículas magnéticas, sendo magnetizada primeiramente pelo método contínuo e posteriormente pelo método do magnetismo residual. Se em ambos os casos aparecer a mesma indicação provavelmente se trata de:", o:["A) uma indicação não relevante.", "B) uma descontinuidade grave, de dimensões significativas.", "C) um defeito profundo.", "D) uma falsa indicação."], r:1},
+  {p:3, q:"2- Indique se a afirmação abaixo é verdadeira ou falsa. Um campo magnético com linhas de força circular é facilmente medido com medidor de campo.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:3, q:"3- Indique se a afirmação abaixo é verdadeira ou falsa. O comprimento de uma peça que é magnetizada pela passagem de corrente elétrica entre suas extremidades não afeta a intensidade do campo magnético produzido.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:3, q:"4- No exame por meio de partículas magnéticas que tipo de corrente de magnetização é mais vantajoso, quando é requerida a desmagnetização total da peça após o exame.", o:["A) corrente contínua.", "B) corrente alternada.", "C) corrente contínua derivada da retificação de onda inteira de corrente alternada.", "D) corrente contínua de meia onda."], r:1},
+  {p:3, q:"5- Qual dos seguintes tipos de corrente usados em retificação detectará com maior eficiência a presença de trincas abertas para a superfície.", o:["A) corrente contínua.", "B) corrente contínua de meia onda.", "C) corrente alternada.", "D) pulsos de corrente."], r:2},
+  {p:3, q:"6- Indique a condition de superfície que não interferirá no exame de peças por meio de partículas magnéticas, por via úmida.", o:["A) peças pintadas.", "B) peças com espessa camada de oxidação.", "C) peças recém usinadas.", "D) peças cromadas."], r:2},
+  {p:3, q:"7- Indique se a afirmação abaixo é verdadeira ou falsa. Quando os contactores são fixados nas extremidades de uma barra cilíndrica, e é estabelecida a passagem de corrente elétrica na barra, o campo magnético formado é circular.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:3, q:"8- Em qual dos seguintes produtos deve ser banhada uma peça, após sua lavagem com detergente, para obter o melhor resultado no exame por meio de partículas magnéticas em suspensão em óleo.", o:["A) terebentina.", "B) querosene.", "C) gasolina.", "D) vaselina."], r:1},
+  {p:3, q:"9- Indique os veículos mais usados no preparo de suspensões para exame por meio de partículas magnéticas por via úmida.", o:["A) água, óleo leve, querosene.", "B) glicerina, condensado, óleo leve.", "C) querosene, solução de nitrato de prata, ar comprimido.", "D) água, querosene, glicerina.", "E) éter, água oxigenada, óleo leve."], r:0},
+  {p:3, q:"10- É mais fácil remover os defeitos apresentados por peças brutas de fundição do que de peças usinadas porque:", o:["A) as peças fundidas têm superfícies brutas.", "B) as peças usinadas possuem maior teor de liga.", "C) as peças usinadas tendem a apresentar magnetismo.", "D) as tolerâncias dimensionais são maiores nas peças brutas de fundição."], r:3},
+  {p:3, q:"11- Indique se a afirmação abaixo é verdadeira ou falsa. No preparo de uma suspensão em que o veículo é óleo leve, a mistura das partículas secas com óleo pode ser feita diretamente.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:3, q:"12- Porque é importante que a suspensão se mantenha livre de fiapos, poeira e outros contaminantes:", o:["A) materiais estranhos na suspensão podem interferir na distribuição, concentração e comportamento das partículas magnéticas.", "B) porque causam bloqueio do campo magnético aplicado alterando completamente o resultado do exame.", "C) porque a peça em exame, sob ação de uma suspensão fora da especificação e do campo magnético, sofre corrosão intensa."], r:0},
+  {p:3, q:"13- Indique qual dos defeitos relacionados abaixo pode ser causado por usinagem", o:["A) risco.", "B) solda de selagem.", "C) trinca de rechupe.", "D) dobra de laminação."], r:0},
+  {p:3, q:"14)-Qual a amperagem que deve ser usada no exame de chapas de aço de 20mm de espessura, por meio de partículas magnéticas, quando for usada a técnica dos eletrodos, sendo de 150 mm a distância entre os eletrodos.", o:["A) 1000 a 1300 ampères.", "B) 600 a 750 ampères. <20 mm –x 3,6 a 4,4 mm; ≧20 mm-x4,0 a 5,0 mm", "C) 250 a 400 ampères.", "D) 800 a 1000 ampères."], r:1},
+  {p:3, q:"15- Para obter o máximo de sensibilidade no exame de soldas por meio de partículas magnéticas.", o:["A) cubra a solda com verniz", "B) esmerilhe a superfície da solda de forma a emparelhá-la com a superfície da peça.", "C) escove a superfície da solda para remover a escória e óxido que estiverem presentes.", "D) pinte a superfície ensaiada."], r:2},
+  {p:3, q:"16- Indique se a afirmação abaixo é verdadeira ou falsa. Quando a solda de uma peça é examinada quanto a defeitos superficiais, a peça deve ser posicionada, preferivelmente, de modo que a superfície em exame fique na posição horizontal.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:3, q:"17- Indique se a afirmação abaixo é verdadeira ou falsa. Ao examinar uma peça pela técnica dos eletrodos a eficiência do exame é a mesma nos dois casos abaixo. Caso 1-650 ampères por 150 mm de distância entre eletrodos. Caso2-1300 ampères por 300 mm de distância entre eletrodos.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:3, q:"18- Indique os dois defeitos de solda que podem ser detectadas pelo exame por meio de partículas magnéticas.", o:["A) laminação e porosidade.", "B) gotas frias e dobras.", "C) bolhas de gás e lascas.", "D) trinca e falta de fusão."], r:3},
+  {p:3, q:"19- Indique os dois defeitos de peças fundidas que podem ser detectados pelo exame por meio de partículas magnéticas", o:["A) mordeduras e porosidades.", "B) laminações e lascas.", "C) segregações e lascas.", "D) rechupes e gotas frias."], r:3},
+  {p:3, q:"20- Indique os dois defeitos de peças forjadas que podem ser detectados pelo exame por meio de partículas magnéticas", o:["A) porosidade e falta de penetração.", "B) mordeduras e inclusões de escória.", "C) rechupes e segregações.", "D) trincas e dobras."], r:3},
+  {p:3, q:"21- Indique se a afirmação abaixo é verdadeira ou falsa. Linhas de escoamento em peças forjadas são causa de rejeição de peças.", o:["A) verdadeiro.", "B) falsa."], r:1},
+  {p:3, q:"22- Indique se a afirmação abaixo é verdadeira ou falsa. O exame de uma solda é feito magnetizando-a sucessivamente em duas direções. Se a corrente usada na primeira magnetização é de 750 ampères, e de 400 ampères na segunda magnetização, a peça deve ser desmagnetizada entre as duas magnetizações.", o:["A) falsa.", "B) verdadeira."], r:1},
+  {p:3, q:"23- Indique se a afirmação abaixo é verdadeira ou falsa. O exame de uma solda é feito magnetizando-a sucessivamente em duas direções. Se a corrente usada na primeira magnetização é de 400 ampères, e de 750 ampères na segunda magnetização, a peça deve ser desmagnetizada entre as duas magnetizações.", o:["A) verdadeira.", "B) falsa."], r:1},
+  {p:3, q:"24- Indique se a afirmação abaixo é verdadeira ou falsa. O aquecimento de uma peça de material ferromagnético a 800 graus centígrados fará com que ela se magnetize.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:3, q:"25- Indique se a afirmação abaixo é verdadeira ou falsa. Irregularidades superficiais, tais como os pontos altos da cobertura dos cordões de solda, apresentam maior tendência de produzir indicações do que trincas.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:3, q:"26- Indique se a afirmação abaixo é verdadeira ou falsa. Peças que possuem superfície usinada, com bom acabamento, devem ser testadas pelo método do contato direto, com injeção de corrente através de eletrodos.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:3, q:"27- Se uma peça é golpeada ou queimada pelos eletrodos ao ser submetida a magnetização, deve ser feito o seguinte:", o:["A) retestar a peça.", "B) nada deve ser feito, por ser normal este tipo de ocorrência.", "C) rejeitar a peça.", "D) esmerilhar a região, reexaminar e informar ao encarregado."], r:3},
+  {p:3, q:"28- Se os cabos de uma máquina para exame por meio de partículas magnéticas forem enrolados em torno de uma peça, sendo estabelecido o fluxo de corrente na bobina assim formada, qual o tipo de magnetização que se produzirá na peça.", o:["A) solenoide.", "B) circular.", "C) circunferencial distorcido.", "D) longitudinal."], r:3},
+  {p:3, q:"29- Quando um campo magnético é induzido em uma peça pelo método do contato direto, com os eletrodos afastados de 150 mm, o campo é:", o:["A) solenoide.", "B) circular.", "C) longitudinal.", "D) circular distorcido."], r:1},
+  {p:3, q:"30- O melhor método de aplicação das partículas magnéticas no exame por via seca consiste em:", o:["A) imergir a peça em exame numa piscina contendo partículas magnéticas.", "B) derramar as partículas magnéticas, colocadas em latas de um quilo, sobre a peça em exame, na quantidade necessária.", "C) aspergi-las sobre a peça em exame, em forma de pó."], r:2},
+  {p:3, q:"31- Quando a distribuição das partículas não apresenta uma forma definida, como deveria ocorrer, a causa provável é:", o:["A) amperagem excessiva.", "B) efeito da temperatura.", "C) emprego de partículas inadequadas.", "D) amperagem muito baixa."], r:3},
+  {p:3, q:"32- Indique se a afirmação abaixo é verdadeira ou falsa. O exame por via úmida é superior ao exame por via seca para detecção de defeitos subsuperficiais.", o:["A) verdadeiro.", "B) falsa."], r:1},
+  {p:3, q:"33- Qual dos seguintes tipos de defeitos normalmente encontrados no exame por meio de partículas magnéticas é geralmente mais grave:", o:["A) subsuperficial.", "B) superficiais."], r:1},
+  {p:3, q:"34- Após um curto período de serviço as peças de uma máquina são submetidas a exame por meio de partículas magnéticas. Os defeitos mais prováveis de serem encontrados são:", o:["A) porosidade.", "B) falta de penetração.", "C) rechupe.", "D) trincas decorrentes de fadiga."], r:3},
+  {p:3, q:"35- Trincas decorrentes de fadiga são:", o:["A) subsuperficiais.", "B) superficiais."], r:1},
+  {p:3, q:"36- Indique se a afirmação abaixo é verdadeira ou falsa. Uma maneira de auxiliar a interpretação de uma indicação consiste em verificar se ela corresponde a uma descontinuidade aberta para a superfície. Isto é feito removendo as partículas magnéticas da região de interesse e examinando a superfície com vista armada e desarmada.", o:["A) falso.", "B) verdadeiro."], r:1},
+  {p:3, q:"37- Indique se a afirmação abaixo é verdadeira ou falsa. Um inspetor pode melhorar significativamente seu conhecimento aproveitando as oportunidades que tiver para verificar o esmerilhamento, corte a carvão ou goivagem dos locais que apresentaram defeitos inaceitáveis.", o:["A) falsa.", "B) verdadeiro."], r:1},
+  {p:3, q:"38- Indique se a afirmação abaixo é verdadeira ou falsa. Materiais muito duros não devem ser atacados quimicamente por um inspetor sem acompanhamento de um supervisor qualificado.", o:["A) falsa.", "B) verdadeiro."], r:1},
+  {p:3, q:"39- Para fazer sentido, a ordem para examinar uma peça por meio de partículas magnéticas deve fazer referência:", o:["A) a fabricação e manual de serviço da peça.", "B) ao desenho da peça, que indique que deve ser examinada.", "C) ao método de exame e condições de serviço.", "D) ao procedimento a ser usado e ao padrão de aceitação."], r:3},
+  {p:3, q:"40- Um defeito é", o:["A) uma indicação formada por partículas magnéticas.", "B) uma inclusão de escória com 50 mm de comprimento.", "C) todas as alternativas estão corretas.", "D) uma descontinuidade prejudicial à qualidade, a aparência e/ou desempenho de uma peça."], r:3}
+
+//PROVA 04
+  {p:4, q:"1- Um forjado foi reparado por soldagem. A inspeção por partículas magnéticas do reparo revelou indicações irregulares, paralelas aos passes de solda. As indicações localizavam-se perto do centro do cordão e nas extremidades desviavam-se levemente da direção axial do cordão. A interpretação correta destas indicações seria:", o:["A) poros.", "B) escórias.", "C) trincas.", "D) falta de fusão."], r:2},
+  {p:4, q:"2- Quando era feito o exame por meio de partículas magnéticas em peças de aço com superfície polida, verifica-se que muitas apresentavam indicações com aparência que variava desde traços finos até agrupamentos difusos. Aparentemente, estas indicações não apresentavam um comportamento padrão no que diz respeito a sua orientação ou posição que apareciam nas peças. Após a desmagnetização, as indicações não tornavam a aparecer em novo exame. A que corresponde a essas indicações é:", o:["A) porosidade.", "B) dobras de laminação.", "C) soldas de metais diferentes.", "D) escrita magnética."], r:3},
+  {p:4, q:"3- Qual dos materiais abaixo permite detectar mais facilmente a presença de defeitos internos, por possuir maior permeabilidade magnética:", o:["A) aços de baixo carbono.", "B) aços inoxidáveis austeníticos.", "C) duralumínio.", "D) aços de alto carbono."], r:0},
+  {p:4, q:"4- Geralmente ocorrem descontinuidades transversais em barras de aço laminadas?", o:["A) não. O processo de obtenção destas barras, por laminação, não produz nenhuma descontinuidade.", "B) sim. Os defeitos são sempre transversais.", "C) os defeitos são transversais em barras de aço carbono, variando nos outros casos, dependendo do teor de liga.", "D) não. As descontinuidades se orientam na direção de laminação, longitudinalmente."], r:3},
+  {p:4, q:"5- Descontinuidades em chapas, causadas por inclusões ou porosidades, no lingote que deu origem ao laminado, são geralmente planas e paralelas à superfície, e recebem a denominação de:", o:["A) costuras.", "B) trincas.", "C) dobras.", "D) laminações."], r:3},
+  {p:4, q:"6- Em qual direção, em relação ao eixo da peça, ocorrem as dobras de forjamento:", o:["A) são sempre encontradas no eixo térmico da peça.", "B) são encontradas na superfície da peça, formando um ângulo de 90 graus com relação ao seu eixo.", "C) podem existir em qualquer lugar, sendo orientados na direção em que a peça foi trabalhada.", "D) podem ocorrer em qualquer lugar da superfície e não tem, necessariamente, relacionamento com a direção do eixo da peça."], r:3},
+  {p:4, q:"7- Indique se a afirmação abaixo é verdadeira ou falsa. É necessário saber quantas espiras existem numa bobina para calcular a força magnetizante. Esta informação está marcada em algumas bobinas. Caso contrário, deve ser obtida do fabricante e registrada para uso quando necessário.", o:["A) falsa.", "B) verdadeiro."], r:1},
+  {p:4, q:"8- Indique se a afirmação abaixo é verdadeira ou falsa. Quando algumas peças de aço devem ser soldadas com arco elétrico manual, o magnetismo residual que possuírem atrai o metal de adição. Isto é benefício quanto a disposição do metal que foi depositado, sendo vantajoso no que se refere a economia e qualidade.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:4, q:"9- O vazamento do campo magnético num determinado local de uma peça faz com que as partículas magnéticas sejam coletadas e mantidas sobre este local. Ao agrupamento de partículas observado numa peça em exame, dá-se o nome de:", o:["A) descontinuidade.", "B) defeito.", "C) indicação.", "D) ocorrência"], r:2},
+  {p:4, q:"10- Ocorrem casos em que as peças em exame apresentam interrupção de sua estrutura física normal, ou de sua configuração, por porosidade, dobras de laminação, dobras de forjamento etc., que possuem características tais que são aceitáveis. Ao serem examinadas por meio de partículas magnéticas, o laudo relativo às indicações resultantes de ocorrências desta natureza deve classificá-las como:", o:["A) defeitos.", "B) indicações.", "C) descontinuidades.", "D) ocorrências."], r:2},
+  {p:4, q:"11- Ocorrem casos em que as partículas magnéticas são atraídas para uma determinada região da superfície de uma peça, devido a um vazamento de campo magnético provocado pela presença de uma trinca, dobra de forjamento ou outra condição não aceitável pelas especificações. Os laudos relativos à ocorrência dessa natureza devem classificá-las como:", o:["A) descontinuidades.", "B) indicações.", "C) defeitos.", "D) ocorrências."], r:2},
+  {p:4, q:"12- Indique o procedimento geralmente usado para eliminar as indicações não relevantes, mais que permita a detecção de defeitos:", o:["A) aquecer a peça a 723 graus centígrados.", "B) examinar a peça com yoke, posicionando este aparelho duas vezes, sucessivamente, sobre cada região da peça, sendo a segunda vez a 90 graus com a primeira.", "C) magnetizar a peça novamente prolongando o tempo de magnetização.", "D) desmagnetizar e reinspecionar convenientemente a peça."], r:3},
+  {p:4, q:"13- Indique se a afirmação abaixo é verdadeira ou falsa. Ficarão magnetizadas todas as peças que estiverem a menos de meio metro de distância livre do local onde é feito o exame por meio de partículas magnéticas em outras peças.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:4, q:"14- Indique qual o grupo de descontinuidades abaixo podem ser encontradas em peças fundidas:", o:["A) costuras.", "B) rasgos e costuras.", "C) rechupes, costuras e laminações.", "D) bolhas de gás, rasgos e rechupes."], r:3},
+  {p:4, q:"15- Indique qual o grupo de descontinuidades abaixo, podem ser encontradas em peças forjadas:", o:["A) rechupes e escórias.", "B) trincas, falta de fusão e mordeduras.", "C) dobras.", "D) dobras e trincas."], r:3},
+  {p:4, q:"16- Em que tipo de descontinuidades que tem maior probabilidade de ser determinada:", o:["A) falta de fusão.", "B) dobra de laminação.", "C) porosidade.", "D) trinca de fadiga."], r:3},
+  {p:4, q:"17- Dois fatores que devem ser considerados ao selecionar o método de magnetização de uma peça são:", o:["A) temperatura e tensão de trabalho da peça.", "B) se a peça será submetida a exame por meio de raio X ou raios gamas posteriormente.", "C) o peso atômico e o ponto de fusão do material da peça.", "D) forma e material da peça."], r:3},
+  {p:4, q:"18- Em que tipo de magnetização se usa a formula ampères-espiras 45.000/L/D.", o:["A) circular.", "B) longitudinal."], r:1},
+  {p:4, q:"19- Qual a amperagem que deve circular numa bobina de cinco voltas para magnetizar uma barra de aço de 75mm de diâmetro e 250mm de comprimento.", o:["A)14.000A.", "B)1.500A.", "C)27.000A.", "D) 2.700A."], r:3},
+  {p:4, q:"20- Para exame por meio de partículas magnéticas fluorescentes, via úmida, a lâmpada de vapor de mercúrio mais indicada é a que tem a potência de:", o:["A) 200 watts.", "B) 50 watts.", "C) 75 watts.", "D) 100 watts."], r:3},
+  {p:4, q:"21- Indique se a afirmação abaixo é verdadeira ou falsa. Não é necessário substituir os filtros das lâmpadas de vapor de mercúrio quando estes estiverem trincados ou quebrados, apenas quando o material a ser examinado for ferromagnético.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:4, q:"22- O filtro e a lâmpada devem ser submetidos a limpeza periodicamente.", o:["A) para dar um aspecto profissional ao laboratório de exames não destrutivos.", "B) porque a acumulação de sujeira e pó permitirá que passe cada vez mais luz visível e menos luz negra.", "C) para remover a sujeira e o pó, que reduzem sensivelmente a transmissão de luz negra.", "D) para aumentar o campo magnético."], r:2},
+  {p:4, q:"23- Para a detecção de todas as indicações, a luz negra deve ser:", o:["A) de 18 a 33 velas-metro.", "B) de 7 a 8 velas-metro.", "C) de 82 a 150 velas-metro.", "D) 30 a 33 velas-metros."], r:3},
+  {p:4, q:"24- Quando o campo magnético de uma peça de material ferromagnético atingiu certo valor, tal que não cresce mais, por mais que se aumente a força magnetizante, diz-se que a peça está:", o:["A) magnetizada.", "B) coercitiva.", "C) retentiva.", "D) saturada."], r:3},
+  {p:4, q:"25- Se duas peças iguais forem magnetizadas, uma circularmente e outra longitudinalmente, qual delas apresentará maior magnetismo residual:", o:["A) a que foi magnetizada circularmente.", "B) a que foi magnetizada longitudinalmente."], r:1},
+  {p:4, q:"26- No exame por meio de partículas magnéticas, uma indicação fixada mecanicamente, e não magneticamente, é conhecida por:", o:["A) trincas.", "B) indicação não-relevante.", "C) escrita magnética.", "D) indicação falsa."], r:3},
+  {p:4, q:"27- Indique a maneira mais adequada para examinar por meio de partículas magnéticas a superfície interna do furo com rasgo de chaveta existente no caso de uma engrenagem.", o:["A) magnetização circular com campo magnético paralelo ao rasgo da chaveta.", "B) magnetização circular com campo magnético perpendicular ao rasgo da chaveta.", "C) usando um condutor central."], r:2},
+  {p:4, q:"28- Indique qual das descontinuidades superficiais ou subsuperficiais de peças ferromagnéticas é mais difícil de detectar com exame por meio de partículas magnéticas por via seca.", o:["A) trincas finas.", "B) dobras de forjamento."], r:1},
+  {p:4, q:"29- Indique quando a desmagnetização é necessária:", o:["A) peças de cobre e suas ligas.", "B) peças que vão ser radiografadas.", "C) peças de aço inoxidável austenítico.", "D) peças que trabalharão junto a instrumentos magnéticos sensíveis."], r:3},
+  {p:4, q:"30- Indique quando a desmagnetização é desnecessária:", o:["A) soldas de tubulões de caldeira.", "B) peças que receberão tratamento térmico a 800 graus Celsius.", "C) peças de aço doce de baixa retentividade.", "D) todas as respostas estão corretas."], r:3},
+  {p:4, q:"31- Costuras em barras laminadas são detectadas de forma mais eficiente no exame por meio de partículas magnéticas if for usada magnetização:", o:["A) longitudinal.", "B) por meio de eletrodos.", "C) por campo magnético oscilante.", "D) circular."], r:3},
+  {p:4, q:"32- Defeitos superficiais finos, tais como trincas de fadiga em superfícies retificadas, existentes em peças que já estiveram em serviço, são detectadas de modo mais eficiente no exame por meio de partículas magnéticas se for usado:", o:["A) exame por via seca e magnetização com corrente contínua.", "B) exame por via seca e corrente contínua pulsante, obtida por retificação de meia onda de corrente alternada.", "C) exame por via úmida e corrente contínua pulsante, obtida por retificação de meia onda de corrente alternada.", "D) exame por via úmida e magnetização com corrente alternada."], r:3},
+  {p:4, q:"33- Um exemplo de indicação não relevante, que seria classificada como anomalia magnética ao invés de uma descontinuidade real são:", o:["A) escórias.", "B) trincas.", "C) nenhuma das mencionadas.", "D) mudanças bruscas na dureza da peça."], r:3},
+  {p:4, q:"34- Indique os defeitos da relação abaixo que podem causar rejeição de uma peça:", o:["A) defeitos inerentes aos materiais básicos usados para fabricar a peça.", "B) defeitos que aparecem durante a fase em que a peça esteve em serviço.", "C) defeitos provocados pelo processo de fabricação da peça a partir de materiais básicos.", "D) nenhum dos defeitos citados.", "E) todos os defeitos citados."], r:4},
+  {p:4, q:"35- Porosidade é defeito causado por qual dos seguintes processos de fabricação de peças:", o:["A) forjamento.", "B) esmerilhamento.", "C) tratamento térmico.", "D) fundição."], r:3},
+  {p:4, q:"36- Quanto mais próximo da superfície estiver a descontinuidade:", o:["A) mais difusa será a indicação que produzirá.", "B) menor será a chance de que produza falhas por fadiga.", "C) menor será o vazamento de campo que produzirá.", "D) mais nítida será a indicação que produzirá."], r:3},
+  {p:4, q:"37- Porque se prefere usar partículas magnéticas fluorescentes em via úmida em vez de pó magnético colorido em alguns casos:", o:["A) para tirar vantagem do efeito das lâmpadas fluorescentes, cujo uso está sendo padronizado para iluminação em muitas plantas.", "B) porque dá melhor resultado no exame de peças grandes e volumosas.", "C) porque é exigido pelas normas, toda vez que se trata de peças para equipamento agrícola.", "D) para aumentar a velocidade e precisão do ensaio."], r:3},
+  {p:4, q:"38- Indique se a afirmação abaixo é verdadeira ou falsa. Indicações produzidas por trabalho a frio não tornam a aparecer em novo exame por meio de partículas magnéticas se a peça for desmagnetizada.", o:["A) verdadeira.", "B) falsa."], r:1},
+  {p:4, q:"39- Indique os itens da relação abaixo que podem produzir indicações não relevantes:", o:["A) juntas entre materiais desiguais.", "B) juntas brasadas.", "C) trabalho a frio.", "D) todas estas as respostas estão certas."], r:3},
+  {p:4, q:"40- Após detectar todas as descontinuidades de uma peça:", o:["A) a peça deve ser rejeitada.", "B) a peça deve ser reparada pela remoção das descontinuidades.", "C) as trincas devem ser esmerilhadas para medir sua profundidade.", "D) as descontinuidades devem ser avaliadas para verificar se preenchem os requisitos dos padrões de aceitação."], r:3}
+
+//PROVA 05
+  {p:5, q:"1- É mais fácil remover os defeitos apresentados por peças brutas de fundição do que de peças usinadas por quê:", o:["A) as peças fundidas têm superfícies brutas.", "B) as peças usinadas possuem maior teor de liga.", "C) as peças usinadas tendem a apresentar magnetismo.", "D) as tolerâncias dimensionais são maiores nas peças brutas de fundição."], r:3},
+  {p:5, q:"2- A padronização dos resultados do exame e possível quando:", o:["A) os operadores são experientes.", "B) se tratar de produção massificada de peças intercambiáveis.", "C) se tratar de peças para aviões.", "D) estiverem sendo usados procedimentos padronizados de operação e procedimentos padronizados de testes."], r:3},
+  {p:5, q:"3- Os geradores de solda não produzem resultado satisfatório quando usados em magnetização circular porque:", o:["A) eles são muito volumosos.", "B) é produzida corrente contínua.", "C) a magnetização obtida é muito fraca.", "D) ocorre abertura de arco nos pontos de contato coma peça."], r:3},
+  {p:5, q:"4- Mantendo-se constante a corrente que passa num condutor, a duplicação do diâmetro do condutor provoca ___________da intensidade do campo magnético na superfície.", o:["A) o aumento.", "B) a duplicação.", "C) a quadruplicação.", "D) a redução."], r:3},
+  {p:5, q:"5- Campos magnéticos externos, muito fortes para permitir um bom exame de uma peça, são geralmente originados por:", o:["A) magnetização circular.", "B) magnetização longitudinal.", "C) magnetização bipolar.", "D) magnetização com yoke."], r:3},
+  {p:5, q:"6- A condição da superfície da peça a ser tratada é importante porque:", o:["A) a mobilidade das partículas pode ser dificultada por graxa ou óleo.", "B) a presença de carepa pode mascarar defeitos verdadeiros.", "C) todas as respostas estão certas."], r:2},
+  {p:5, q:"7- Indique se a afirmação abaixo é verdadeira ou falsa. Uma camada fina de cádmio depositada sobre a superfície de uma peça não afetará a sensibilidade do exame por meio de partículas magnéticas.", o:["A) falsa.", "B) verdadeira."], r:1},
+  {p:5, q:"8- Indique se a afirmação abaixo é verdadeira ou falsa. Defeitos em peças de latão podem ser detectados por meio de partículas magnéticas fluorescentes, via úmida:", o:["A) verdadeira.", "B) falsa."], r:1},
+  {p:5, q:"9- Indique se a afirmação abaixo é verdadeira ou falsa. A maneira mais aproximada de magnetizar uma peça, de modo que praticamente não ocorra vazamento do campo magnético por qualquer razão, que não indicações, é através da colocação da peça entre os contactores de uma máquina para exame por meio de partículas magnéticas.", o:["A) falsa.", "B) verdadeira."], r:1},
+  {p:5, q:"10- Indique se a afirmação abaixo é verdadeira ou falsa. Quando uma peça tubular é magnetizada pela passagem de corrente num condutor colocado em seu interior, o campo magnético estabelecido no cilindro terá a mesma intensidade e comportamento, independentemente do diâmetro do condutor e da posição que ocupa com relação ao eixo do tubo.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:5, q:"11- Indique se a afirmação abaixo é verdadeira ou falsa. Uma barra laminada de uma polegada de diâmetro é magnetizada pela passagem de corrente entre suas extremidades. Se uma barra similar, com duas polegadas de diâmetro, for magnetizada da mesma forma, com a mesma intensidade, o campo magnético induzido terá a metade da intensidade do que no caso anterior.", o:["A) falsa.", "B) verdadeira."], r:1},
+  {p:5, q:"12- Dois condutores de mesma dimensões são construídos de materiais diferentes, sendo um deles magnético e o outro não magnético. Quando conduzem correntes elétricas iguais", o:["A) o campo magnético produzido no condutor de material magnético é mais forte.", "B) os campos magnéticos produzidos são iguais."], r:1},
+  {p:5, q:"13- Quando uma peça é submetida a dois campos magnéticos de sentidos diferentes, o resultado é a formação de um campo cuja intensidade e direção serão __________ dos dois campos aplicados.", o:["A) as mais fortes.", "B) as médias daquelas.", "C) as mais fracas.", "D) a soma vetorial daquelas."], r:3},
+  {p:5, q:"14- Ao submeter uma peça por meio de partículas magnéticas com magnetização por meio de corrente contínua, apareceu uma indicação. Para determinar se o defeito é profundo, ou se está próximo a superfície, deve-se:", o:["A) observar as características da indicação e remover o pó.", "B) examinar a peça por meio de líquido penetrante.", "C) desmagnetizar e aplicar pó magnético.", "D) examinar novamente a peça usando corrente alternada."], r:3},
+  {p:5, q:"15- Um método eficiente e geralmente usado para registrar as indicações produzidas por pó magnético consiste em:", o:["A) radiografar a peça.", "B) marcar com punção na superfície da peça.", "C) todas as respostas estão corretas.", "D) fotografar o agrupamento de partículas sobre a superfície da peça em exame."], r:3},
+  {p:5, q:"16- Três descontinuidades encontradas em soldas são:", o:["A) trincas de fadiga, dobras e porosidade.", "B) rechupes, laminações e trincas.", "C) gotas frias, segregação e lascas.", "D) inclusão de escória, porosidade e falta de fusão."], r:3},
+  {p:5, q:"17- Dois tipos de descontinuidades associadas com operação de acabamento tais como, usinagem, retificações e tratamento térmicos são:", o:["A) inclusões de escória e mordeduras.", "B) rechupes e gotas frias.", "C) trincas de fadiga e dobras de forjamento.", "D) trincas de têmpera e trincas de galvanoplastia."], r:3},
+  {p:5, q:"18- Indique que tipo de descontinuidade é mais perigosa, quanto a localização:", o:["A) descontinuidades subsuperficiais.", "B) descontinuidades superficiais."], r:1},
+  {p:5, q:"19- Duas descontinuidades consideradas inerentes ao processo de obtenção dos metals são:", o:["A) cristalização e trincas de fadiga.", "B) riscos de ferramentas e falha de galvanoplastia.", "C) descarbonetação e tensão de trabalho excessiva.", "D) gotas frias e rechupes."], r:3},
+  {p:5, q:"20- Para que um exame por meio de partículas magnéticas seja eficiente é preciso:", o:["A) todas as descontinuidades sejam detectadas.", "B) todas as falhas superficiais sejam detectadas.", "C) sejam detectados todos os defeitos subsuperficiais uma vez que os superficiais serão identificados pelo exame visual.", "D) sejam detectadas todas as descontinuidades que possam comprometer o bom desempenho da peça quando em serviço."], r:3},
+  {p:5, q:"21- O método mais prático e eficiente para desmagnetização é:", o:["A) através de um solenoide de três espiras, usando baixa voltagem.", "B) através de circuitos osciladores.", "C) através de um solenoide, usando corrente contínua.", "D) através de um solenoide, usando corrente contínua, mas de forma que sua polaridade é periodicamente revertida, enquanto a amperagem diminui."], r:3},
+  {p:5, q:"22- Na desmagnetização de uma peça, o operador deve:", o:["A) sempre martelar a peça.", "B) tomar em consideração o efeito do campo magnético terrestre.", "C) usar o método da bobina para inspecionar todas as peças grandes, antes da desmagnetização.", "D) estar familiarizado com os princípios envolvidos e com o grau de desmagnetização desejado."], r:3},
+  {p:5, q:"23- Normalmente, o exame satisfatório de uma solda pode ser realizado depois do seguinte condicionamento de sua superfície:", o:["A) alisar a superfície do cordão, revestindo-o com pasta ou tinta.", "B) limpar a superfície da peça por jateamento de areia ou granalha de aço, ou por escovamento com escova de aço.", "C) limpar a superfície da peça por ataque com ácido.", "D) alisar por esmerilhamento a superfície do cordão de solda, removendo o reforço e deixando-a no mesmo plano das peças adjacentes."], r:3},
+  {p:5, q:"24- A intensidade do campo magnético no interior de uma bobina é determinada", o:["A) pela corrente da bobina.", "B) pelo número de espiras da bobina.", "C) pelo diâmetro da bobina.", "D) pelos três fatores acima."], r:3},
+  {p:5, q:"25- Porosidade, gotas frias e inclusões não metálicas são descontinuidades introduzidas em qual dos processos da fabricação relacionados abaixo:", o:["A) forjamento", "B) esmerilhamento.", "C) tratamento térmico.", "D) fundição."], r:3},
+  {p:5, q:"26- As descontinuidades que são encontradas com maior frequência em barras laminadas são:", o:["A) trincas.", "B) defeitos de forjados.", "C) porosidades.", "D) trincas de fadiga."], r:3},
+  {p:5, q:"27- A inspeção por partículas magnéticas é aplicável em materiais:", o:["A) paramagnéticos.", "B) diamagnéticos.", "C) inoxidáveis austeníticos.", "D) ferromagnéticos."], r:3},
+  {p:5, q:"28- Os tipos de pós magnéticos utilizados no ensaio por partículas magnéticas são:", o:["A) pós aplicados por via seca", "B) pós aplicados por via úmida", "C) pós fluorescentes", "D) todas as alternativas são corretas."], r:3},
+  {p:5, q:"28- Os tipos de pós magnéticos utilizados no ensaio por partículas magnéticas são:", o:["A) pós aplicados por via seca", "B) pós aplicados por via úmida", "C) pós fluorescentes", "D) todas as alternativas são corretas."], r:3},
+  {p:5, q:"29- As indicações observadas no ensaio por partículas magnéticas, são causadas quando as partículas ferromagnéticas se aglomeram, no seguinte caso:", o:["A) na existência de um desvio das linhas de campo magnético, na região da descontinuidade superficial ou subsuperficial.", "B) na existência de uma descontinuidade interna.", "C) na existência de descontinuidades abertas para a superfície.", "D) todas as alternativas são corretas."], r:3},
+  {p:5, q:"30- Dos materiais abaixo, quais os que não podem ser inspecionados por partículas magnéticas?", o:["A) aços inoxidáveis austeníticos.", "B) aços carbono.", "C) aços fundidos.", "D) as alternativas (b) e (c) são corretas."], r:0},
+  {p:5, q:"31- Um aparelho muito utilizado para magnetização que é baseado num eletroímã, denomina-se:", o:["A) eletrodos.", "B) Yoke.", "C) bobina.", "D) magnetômetro."], r:1},
+  {p:5, q:"32- Os campos de magnetização utilizados para a inspeção por partículas magnéticas são:", o:["A) campo longitudinal e transversal.", "B) campo circular e transversal.", "C) campo longitudinal e circular.", "D) campo alternado e residual."], r:2},
+  {p:5, q:"33- Os aparelhos que operam injetando corrente elétrica na peça produzem um campo do tipo:", o:["A) longitudinal.", "B) circular.", "C) transversal.", "D) residual."], r:1},
+  {p:5, q:"34- Após a inspeção por partículas magnéticas, há necessidade de.....................a peça principalmente se operações subsequentes de soldagem ou usinagem forem previstas.", o:["A) desmagnetizar.", "B) esmerilhar.", "C) reinspecionar com líquidos penetrantes.", "D) lavar com ácido."], r:0},
+  {p:5, q:"35- A condição superficial de uma peça ser ensaiada por partículas magnéticas é importante, pois:", o:["A) a mobilidade das partículas sobre a superfície pode ser dificultada.", "B) a presença de carepas ou sujeira pode mascarar os resultados.", "C) a presença de graxa ou óleo pode impedir a mobilidade das partículas magnéticas.", "D) todas as alternativas são corretas."], r:3},
+  {p:5, q:"36- Uma vantagem do ensaio por partículas magnéticas sobre os líquidos penetrantes é que:", o:["A) O líquido penetrante só detecta descontinuidades abertas para as superfícies e as partículas magnéticas detecta aquelas subsuperficiais.", "B) O ensaio por partículas magnéticas não necessita de preparação de superfície.", "C) O ensaio por partículas magnéticas pode detectar descontinuidades internas em geral.", "D) O ensaio por partículas magnéticas não requer limpeza após o ensaio."], r:0},
+  {p:5, q:"37- Os sistemas existentes para magnetização da peça para o ensaio por partículas magnéticas são:", o:["A) bobina; eletrodos.", "B) eletrodos; bobina e Yoke.", "C) eletrodos; bobina; condutor central e Yoke.", "D) eletrodos; bobina; condutor central; placas paralelas; Yoke; ponteiras."], r:2},
+  {p:5, q:"38- As etapas no processo de inspeção contínua por partículas magnéticas são:", o:["A) aplicação do pó magnético; magnetização; remoção do excesso de pó; observação das indicações.", "B) preparação da superfície; aplicação do pó magnético; magnetização; remoção do excesso de pó observação das indicações.", "C) preparação da superfície; magnetização; observação das indicações.", "D) preparação da superfície; magnetização; aplicação do pó magnético; remoção do excesso de pó magnético; observação das indicações."], r:3},
+  {p:5, q:"39- Qual das alternativas é verdadeira?", o:["A) o ensaio por partículas magnéticas pode ser aplicada em altas temperaturas até 300 graus centígrados.", "B) o ensaio por partículas magnéticas é de aplicação mais rápida que por líquidos penetrantes.", "C) o ensaio por partículas magnéticas é de fácil automatização.", "D) todas as alternativas são verdadeiras."], r:3},
+  {p:5, q:"40- Qual dos métodos abaixo corresponde ao de maior sensibilidade para a detecção de descontinuidades por partículas magnéticas?", o:["A) via seca, com pó magnético visível com luz natural.", "B) via úmida, com pó magnético visível com luz negra.", "C) via úmida, com pó magnético visível com luz natural.", "D) via seca, com pó magnético visível com luz negra."], r:1}
+
+//PROVA 06
+  {p:6, q:"1-Os veículos que podem ser usados para a aplicação dos pós magnéticos são:", o:["A) água.", "B) querosene.", "C) óleo.", "D) todas as alternativas são corretas."], r:3},
+  {p:6, q:"2- Os tipos de pós magnéticos que oferecem maior sensibilidade, encontrados no mercado são:", o:["A) via úmida vermelhos.", "B) via seca fluorescentes.", "C) via úmida fluorescentes.", "D) via seca amarelos."], r:2},
+  {p:6, q:"3- O aparelho de magnetização Yoke, de acordo com ASME Sec. V Art. 7deve ser calibrado através da elevação de carga e com registro documentado na frequência de:", o:["A) 4,5 kg com C.A, uma vez por ano.", "B) 18 kg com C.C, uma vez por ano.", "C) 4,5 kg com C.C, a cada uso.", "D) as alternativas (a) e (b) são corretas."], r:1},
+  {p:6, q:"4- Um dos problemas em se magnetizar uma peça através do uso dos eletrodos é que:", o:["A) existe uma dificuldade em se aplicar o pó magnético.", "B) os pontos de contato podem danificar a superfície da peça.", "C) é difícil a preparação da superfície nesta técnica.", "D) o campo magnético produzido é insuficiente."], r:1},
+  {p:6, q:"5- A magnetização longitudinal pode ser obtida através:", o:["A) injetando corrente elétrica na peça.", "B) do uso dos Yokes.", "C) do uso de espiras envolventes na peça.", "D) as alternativas (b) e (c) são corretas."], r:3},
+  {p:6, q:"6- O padrão oitavado da norma ASME Sec. V, possui a finalidade de:", o:["A) indicar quantitativamente o valor do campo magnético.", "B) verificar até que profundidade o campo magnético é eficaz.", "C) verificar a direção do campo magnético aplicado.", "D) indicar a presença de campo magnético."], r:2},
+  {p:6, q:"7- Num reparo com solda numa chapa de aço carbono, onde o material depositado não é magnético a inspeção por partículas magnéticas neste local irá:", o:["A) causar uma magnetização com alta retentividade na região de solda.", "B) causar falsas indicações na região de transição entre metal base e metal depositado.", "C) provavelmente detectar fissuras na região de transição.", "D) todas as alternativas podem ocorrer."], r:1},
+  {p:6, q:"8- Na prática, um dos problemas da aplicação da inspeção por partículas magnéticas em comparação com líquidos penetrantes é que:", o:["A) a partícula magnética é um método menos sensível que o penetrante.", "B) a visualização das indicações produzidas por partículas magnéticas é mais difícil de serem visualizadas que por líquidos penetrantes.", "C) o método por partículas magnéticas necessita de maior cuidado na preparação das superfícies.", "D) o método por partículas magnéticas é mais perigoso que o penetrante."], r:1},
+  {p:6, q:"9- Qual das afirmações abaixo é verdadeira?", o:["A) O ensaio por partículas magnéticas só é aplicável em materiais ferromagnéticos.", "B) Os materiais ditos diamagnéticos não são atraídos pelo imã.", "C) A permeabilidade magnética não é constante para um determinado material.", "D) todas as alternativas são verdadeiras."], r:3},
+  {p:6, q:"10- Qual das seguintes alternativas é uma vantagem do ensaio por partículas magnéticas?", o:["A) não necessita de preparação da superfície.", "B) as indicações se produzem diretamente sobre as superfícies, podendo detectar descontinuidades superficiais e subsuperficiais.", "C) pode ser aplicado em qualquer material, desde que seja condutor.", "D) não requer procedimentos especiais após o ensaio realizado."], r:1},
+  {p:6, q:"11- Em geral, os aparelhos Yokes eletromagnéticos são utilizados na inspeção:", o:["A) em peças cilíndricas.", "B) em peças acabadas, onde o contato elétrico não é permitido.", "C) em equipamentos com risco de incêndio ou explosão.", "D) as alternativas (a) e (b) são corretas."], r:3},
+  {p:6, q:"12- No ensaio por partículas magnéticas a escrita magnética é uma indicação:", o:["A) relevante e reprovável.", "B) não relevante associada a materiais com características de alta retentividade.", "C) que somente aparece quando aplicada a técnica dos eletrodos.", "D) não há este tipo de indicação"], r:1},
+  {p:6, q:"13- De acordo com o ASME Sec. V Art.7, a temperatura máxima de aplicação das partículas magnéticas via úmida é de:", o:["A) 300° C.", "B) 57,2° C.", "C) de acordo com o flash point do veículo.", "D) N.D.A."], r:1},
+  {p:6, q:"14- O movimento resultante do fluxo de elétrons através de um condutor define:", o:["A) campo magnético.", "B) corrente elétrica.", "C) eletroímã.", "D) resistência elétrica."], r:1},
+  {p:6, q:"15- No método de inspeção por partículas magnéticas via úmida, os parâmetros que devem ser verificados antes do início do ensaio são:", o:["A) se a superfície da peça está adequadamente preparada e foi umedecida com o veículo.", "B) se a concentração do pó magnético no veículo está de acordo com o especificado.", "C) se a temperatura da peça está abaixo de 200 C", "D) se existe contaminação do pó magnético com materiais não magnéticos."], r:1},
+  {p:6, q:"16- Em geral para a detecção de descontinuidades superficiais na inspeção por partículas magnéticas, o tipo de corrente elétrica magnetizante recomendada é:", o:["A) alternada.", "B) contívua.", "C) retificada de meia onda.", "D) trifásica retificada."], r:0},
+  {p:6, q:"17- A operação de desmagnetização deve ocorrer em:", o:["A) peças submetidas à inspeção por partículas magnéticas antes de sofreram tratamento térmico.", "B) todas as peças que sofreram inspeção por partículas magnéticas.", "C) peças submetidas ao ensaio por partículas magnéticas, que serão instaladas próximas a instrumentos, que podem sofrer desvios ou interferência sob campos magnéticos.", "D) todas as alternativas são verdadeiras."], r:2},
+  {p:6, q:"18- Qual das afirmações abaixo é verdadeira:", o:["A) a forma ou posição da descontinuidade não afeta a detectabilidade por partículas magnéticas.", "B) não é recomendado o uso da técnica de eletrodos para inspeção de peças usinadas acabadas.", "C) não é permitido o jateamento como auxílio na preparação inicial da superfície.", "D) nenhuma das alternativas é correta."], r:1},
+  {p:6, q:"19- Em geral para a inspeção de soldas planas pela técnica de eletrodos, a avaliação da intensidade da corrente é feita baseada:", o:["A) na espessura da chapa", "B) no tipo de material", "C) na distância entre os pontos de contato.", "D) alternativas (a) e (c) são corretas."], r:3},
+  {p:6, q:"20- Na técnica de ensaio por partículas magnéticas, denominada residual, é caracterizada por:", o:["A) as operações de magnetização e aplicação do pó magnético são feitas sequencialmente, sem interrupção da magnetização.", "B) as operações de magnetização e aplicação do pó magnético são feitas separadamente, com interrupção da magnetização.", "C) somente é aplicável em materiais com alta retentividade.", "D) as alternativas (b) e (c) são corretas."], r:3},
+  {p:6, q:"21- A técnica de inspeção por partículas magnéticas que ao ser aplicada produz faíscas capaz de deixar marcas na superfície do metal é denominada:", o:["A) técnica do yoke.", "B) técnica da bobina.", "C) técnica dos eletrodos.", "D) técnica do condutor central."], r:2},
+  {p:6, q:"22- De acordo com o Código ASME Sec. V SE-709, a concentração das partículas via úmida visíveis com luz branca, a serem usadas com água, deve ser de:", o:["A) de 1,2 a 2,4 ml.", "B) de 0,1 a 0,4 ml.", "C) de 1,5 a 3,0 ml.", "D) de 2,0 a 5,0 ml."], r:0},
+  {p:6, q:"23- Uma peça magnetizada com campo magnético circular, no ensaio por partículas magnéticas deverá mostrar:", o:["A) descontinuidades subsuperficiais.", "B) descontinuidades do tipo inclusão não metálica.", "C) descontinuidades circulares.", "D) descontinuidades longitudinais à peça."], r:3},
+  {p:6, q:"24- Qual das seguintes descontinuidades são típicas para a detecção por partículas magnéticas?", o:["A) trincas ou falta de fusão superficiais, em soldas ferromagnéticas.", "B) bolhas internas de gás em fundidos ferromagnéticos", "C) gotas frias", "D) porosidade, inclusões e trincas em materiais ferromagnéticos."], r:0},
+  {p:6, q:"25- As características magnéticas principais das partículas ferromagnéticas, são:", o:["A) elevada permeabilidade e elevada retentividade.", "B) elevada retentividade e baixa permeabilidade.", "C) elevada permeabilidade e baixa retentividade.", "D) baixa retentividade e elevada retentividade."], r:2},
+  {p:6, q:"26- Quais das afirmações abaixo é verdadeira?", o:["A) não existem limitações ou formas das peças a serem inspecionadas por partículas magnéticas.", "B) a maior vantagem do uso de veículo oleoso para o ensaio por partículas magnéticas via úmida é a proteção contra a corrosão das peças.", "C) o método de inspeção por partículas magnéticas em materiais ferromagnéticos, é mais sensível que por líquidos penetrantes.", "D) todas as alternativas são verdadeiras."], r:3},
+  {p:6, q:"27- Os tipos de correntes elétricas de magnetização que podem ser usadas nas máquinas para inspeção por partículas magnéticas são:", o:["A) corrente alternada retificada de meia onda com fase simples", "B) corrente alternada retificada de onda completa trifásica", "C) corrente contínua", "D) todas as alternativas são corretas."], r:3},
+  {p:6, q:"28- Quais dos veículos abaixo é o mais indicado para ser usado na inspeção por partículas magnéticas via úmida pela técnica de eletrodos?", o:["A) querosene.", "B) óleo.", "C) água + antioxidante.", "D) N.D.A."], r:2},
+  {p:6, q:"29- De acordo com o Código ASME Sec. V Art.7, qual a corrente de magnetização necessária para inspecionar por partículas magnéticas, usando a técnica dos eletrodos, numa junta soldada de topo com espessura de 38 mm?", o:["A) 200 a 250 A, com 25 mm de espaçamento dos eletrodos.", "B) 200 a 250 A, com 50 mm de espaçamento dos eletrodos.", "C) 90 a 110 A, com 25 mm de espaçamento dos eletrodos.", "D) 100 a 125 A, com 50 mm de espaçamento dos eletrodos."], r:1},
+  {p:6, q:"30- De acordo com o ASME Sec. V Art.7, a corrente de magnetização a ser utilizada com o Yoke deverá ser:", o:["A) contínua.", "B) alternada retificada de onda completa.", "C) alternada.", "D) trifásica."], r:2},
+  {p:6, q:"31- De acordo com o ASME Sec. V Art.7, a inspeção de uma junta soldada deve:", o:["A) ser inspecionada duas vezes numa mesma região, com a direção do campo do primeiro ensaio, perpendicular ao segundo ensaio.", "B) sofrer tratamento térmico antes do ensaio", "C) ser utilizada somente partículas magnéticas via úmida", "D) as alternativas (a) e (c) são corretas"], r:0},
+  {p:6, q:"32- Quando aplicamos um campo magnético externo variável numa peça ferromagnética, ela se magnetiza, até o ponto de saturação. Ao desligarmos o campo magnético externo, o que ocorre com a peça?", o:["A) a peça perde o magnetismo.", "B) a peça perde o magnetismo, porém permanece aquecida.", "C) a saturação magnética permanece inalterada.", "D) o magnetismo da peça reduz no mesmo sentido, porém um resíduo magnético sempre permanece na peça."], r:3},
+  {p:6, q:"33- De acordo com ASME Sec. VIII Div.1, Ap. 6, quais descontinuidades apresentadas na fig.1 corresponde a forma linear?", o:["A) 1,2,3 e 4.", "B) 2,3 e,5.", "C) 2 e 5.", "D) 1 e 4."], r:1},
+  {p:6, q:"34- De acordo com ASME Sec. VIII Div.1, Ap. 6, quais descontinuidades apresentadas na fig.1 corresponde a forma arredondada?", o:["A) 1 ,3 e 4", "B) 2,3 e,5", "C) 2 e 5", "D) 1 e 4"], r:3},
+  {p:6, q:"35- De acordo com ASME Sec. VIII Div.1, Ap.6, quais descontinuidades apresentadas na fig.1 são reprovadas?", o:["A) 1,2,3 e 5.", "B) 2,3 e,5.", "C) 2 e 5.", "D) 1 e 4."], r:0},
+  {p:6, q:"36- De acordo com ASME Sec. VIII Div.1, Ap. 6, quais descontinuidades apresentadas na fig.1 são aprovadas?", o:["A) 1 e 5.", "B) 3 e 4.", "C) 4.", "D) Nenhuma delas."], r:2},
+  {p:6, q:"37- Indique se afirmação abaixo é verdadeira ou falsa. “Qualquer peça que tenha sido examinada por meio de partículas magnéticas dispensa desmagnetização”.", o:["A) verdadeiro", "B) falso."], r:1},
+  {p:6, q:"38- Indique se a afirmação abaixo é verdadeira ou falsa. O teste da bússola para verificar se uma peça está magnetizada não é valido se a peça estiver magnetizada circularmente.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:6, q:"39- Indique se a afirmação abaixo é verdadeira ou falsa. Partes de alumínio são facilmente examinadas por meio de partículas magnéticas.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:6, q:"40- Indique se a afirmação abaixo é verdadeira ou falsa. Para detectar falhas longitudinais em uma barra de aço, o método de magnetização circular é o mais indicado.", o:["A) verdadeiro.", "B) falso."], r:0}
+
+//PROVA 07
+  {p:7, q:"1) Para execução do ensaio por partícula magnética é necessário que:", o:["A) O material a ser inspecionado seja ferromagnético e as partículas diamagnéticas.", "B) O material a ser inspecionado seja ferromagnético e as partículas paramagnéticas.", "C) O material e as partículas sejam ferromagnéticos.", "D) O material a ser inspecionado seja diamagnético e as partículas ferromagnéticas."], r:2},
+  {p:7, q:"2) A região próxima dos polos do yoke:", o:["A) Apresenta campo magnético intenso e sensibilidade de inspeção elevada.", "B) Apresenta campo magnético baixo sensibilidade de inspeção baixa.", "C) Apresenta campo magnético intenso e sensibilidade de inspeção baixo.", "D) Apresenta campo magnético baixo sensibilidade de inspeção elevada."], r:2},
+  {p:7, q:"3) A sequência de operações, tipo de aparelho, método do exame, por magnético e veículo a ser usado deve estar contido:", o:["A) No desenho da peça, onde indica o local que deve ser examinado.", "B) No método de ensaio e condição de serviço.", "C) No manual de serviço da peça.", "D) No procedimento a ser usado."], r:3},
+  {p:7, q:"4) Qual das medidas abaixo corresponds a uma vantagem da técnica de yoke.", o:["A) Para a aplicação dessa técnica não é necessário a preparação da superfície da peça.", "B) A técnica é própria para detecção de defeitos subsuperficiais.", "C) O aparelho é portátil e de fácil manuseio.", "D) Todas as respostas estão corretas."], r:2},
+  {p:7, q:"5) O acúmulo de partículas magnéticas sem que haja atração magnética formará indicações que são chamadas de:", o:["A) Indicações não relevantes.", "B) Porosidades", "C) É impossível ocorrer este fato.", "D) Indicações falsas."], r:0},
+  {p:7, q:"6) Quando aparecem na superfície em teste de uma peça indicações com a forma de um conjunto de linhas curvas, deve-se:", o:["A) Rejeitar a peça", "B) Recomeçar o ensaio com corrente mais alta", "C) Repetir o ensaio partindo da direção oposta", "D) Recomeçar o ensaio com corrente mais baixa."], r:3},
+  {p:7, q:"7) O aparecimento de uma trinca numa peça em forma de anel, quer foi magnetizada de modo que as linhas de força percorrem o anel, determinará:", o:["A) O aparecimento de um terceiro polo", "B) O desaparecimento do campo magnético", "C) A alteração dos polos magnéticos existente no anel", "D) A formação de polos magnéticos."], r:3},
+  {p:7, q:"8) Marque a alternativa correta.", o:["A) No ensaio por partículas magnéticas a limpeza é necessária apenas na região do contato dos polos do yoke.", "B) Indicações reveladas no ensaio por partículas magnéticas somente serão consideradas defeitos se definido no critério de aceitação do procedimento ou da norma utilizada.", "C) Todas as indicações reveladas no ensaio de PM devem ser reparadas.", "D) É desnecessário remover a graxa que protege as superfícies das peças contra corrosão para o ensaio por PM."], r:1},
+  {p:7, q:"9) Das afirmativas abaixo indique uma causa de indicação não relevante no ensaio por PM.", o:["A) Mudança de permeabilidade do material.", "B) Magnetização excessiva", "C) Todas as respostas estão corretas", "D) Corrente excessiva."], r:2},
+  {p:7, q:"10) Qual das técnicas de magnetização é a mais recomendável para detecção de trincas longitudinais em soldas circunferenciais de tubos de duas polegadas de diâmetro e 350mm de comprimento.", o:["A) Técnica de contato direto", "B) Yoke", "C) Magnetização por bobina", "D) Técnicas dos eletrodos"], r:1},
+  {p:7, q:"11) O ensaio por PM fluorescente pode ser usado em local iluminado com lâmpada fluorescente.", o:["A) Somente se forem com o mesmo comprimento de onda.", "B) Não", "C) Sim", "D) Somente se forem com comprimento de onda diferente."], r:0},
+  {p:7, q:"12) Um material de difícil magnetização.", o:["A) Tem características ferromagnéticas", "B) Possui alta resistência", "C) Possui impermeabilidade", "D) Possui baixa permeabilidade"], r:3},
+  {p:7, q:"13) Indicações causadas por fuga de fluxo magnéticos do corpo de uma peça, devido a ranhuras internas, rasgos de chavetas ou furos existentes nas proximidades de superfície examinadas são denominadas:", o:["A) Defeitos", "B) Zonas limites", "C) Escrita magnética", "D) Indicações não relevantes"], r:3},
+  {p:7, q:"14) Indicar qual das afirmativas é falsa:", o:["A) Quando não se sabe qual corrente necessária para se magnetizar a peça, usa-se a máxima corrente que a máquina possa produzir tanto nos métodos de eletrodos como o yoke.", "B) O campo magnético circula induzido em um material ferromagnético sem descontinuidade, estabelece linhas de força que ficam completamente contidas no material.", "C) Na inspeção subaquática, utiliza normalmente as técnicas do yoke e bobina com partículas magnéticas via úmida fluorescente.", "D) Uma fuga de campo magnético ocorrerá quando uma descontinuidade, tal como uma trinca, estiver paralela as linhas de força."], r:3},
+  {p:7, q:"15) Considerando-se a inspeção de uma junta entre uma peça de aço carbono e outra de aço inoxidável austenitico, qual das afirmativas abaixo é verdadeira:", o:["A) Deve-se encontrar indicações linear em um dos lados do cordão de solda.", "B) Deve-se efctuar a inspeção com yoke por meio de via úmida colorida.", "C) Deve-se efetuar inspeção com yoke por meio de via úmida fluorescente.", "D) Deve-se encontrar falta de fusão em um dos lados do cordão de solda."], r:3},
+  {p:7, q:"16) Mudança bruscas na dureza da peça originam indicações no ensaio por PM que são chamadas de:", o:["A) São indicações não relevantes", "B) Defeitos", "C) Indicações falsas", "D) Mudanças bruscas na dureza da peça não originam indicações"], r:0},
+  {p:7, q:"17) Aumentando-se a corrente de magnetização, a intensidade do campo magnético:", o:["A) Não se altera", "B) Sempre diminui", "C) Sempre aumenta", "D) Aumenta a performance constante, defendendo do ponto de saturação do material."], r:2},
+  {p:7, q:"18) Para que um ensaio por meio de PM seja eficiente é preciso que:", o:["A) Todas as descontinuidades sejam encontradas.", "B) Sejam encontradas todas as descontinuidades superficiais e subsuperficiais que possam comprometer o com desempenho da peça quando em serviço.", "C) Todas as falhas superficiais sejam detectadas", "D) Sejam detectados todos os defeitos subsuperficiais, uma vez que todos os superficiais serão indicados pelo ensaio visual."], r:1},
+  {p:7, q:"19) Qual deve ser a faixa do comprimento da onda da luz negra aplicável ao exame por meio de PM fluorescente.", o:["A) 330 a 390 angstrons", "B) 33000 a 39000 angstrons", "C) 33 a 39 angstrons", "D) 3300 a 3900 angstrons."], r:3},
+  {p:7, q:"20) Marque a alternativa que completa a afirmação: A suspensão deve ser mantida livre de contaminantes para:", o:["A) Obedecer ao procedimento", "B) Não causar corrosão na peça", "C) Não interferir no ensaio causando falsas indicações", "D) Não diminuir o tempo de vida útil da suspensão."], r:2},
+  {p:7, q:"21) O vazamento do campo magnético num determinado local de uma peça faz com que as partículas magnéticas sejam coletadas e mantida sobre este local, o agrupamento de partículas observado numa peça em ensaio, dá-se o nome de:", o:["A) Campo de fuga", "B) Descontinuidade", "C) Indicação", "D) Defeito."], r:2},
+  {p:7, q:"22) indicações não relevantes, devido a polos magnéticos residuais localizados em pequenas regiões da superfície de interesse, interferem com o ensaio por meio de PM. Nestes casos para obter sucesso no ensaio deve-se:", o:["A) Usar corrente menor", "B) Usar menor corrente", "C) Magnetizar a peça em outra direção", "D) Desmagnetizar a peça, magnetizá-la novamente como desejado"], r:3},
+  {p:7, q:"23) Das alternativas abaixo, qual deve ser considerada na escolha de um aparelho ou equipamento para o ensaio de um material ferromagnético.", o:["A) A dimensão da peça", "B) A forma da peça", "C)Todas as alternativas estão corretas", "D) A quantidade de peça"], r:2},
+  {p:7, q:"24) Por que se prefere usar PM fluorescentes via úmida em vez de seca colorida em alguns casos:", o:["A) Porque apresenta melhor resultado no ensaio de peças grandes volumosas.", "B) Para aumentar a precisão do ensaio", "C) Porque é exigido pelas normas toda vez que se tratar de peças para equipamentos agrícolas.", "D) Para tirar vantagens do efeito das lâmpadas fluorescentes, cujo uso está sendo padronizada para iluminação em muitas indústrias."], r:1},
+  {p:7, q:"25) O ensaio por meio de PM não é indicado para a detecção de:", o:["A) Descontinuidade superficiais em solda", "B) Dobras de laminação", "C) Dupla laminação", "D) Descontinuidades subsuperficiais."], r:2},
+  {p:7, q:"26) Marque a alternativa correta:", o:["A) As linhas de força de um campo magnético formam um circuito dependente do tipo de corrente (alternado ou contínuo).", "B) As linhas de força de um campo magnético sempre formam um círculo aberto", "C) As linhas de força de um campo magnético nem sempre formam um circuito fechado", "D) As linhas de força de um campo magnético sempre formam um circuito fechado"], r:3},
+  {p:7, q:"27) Que tipo de materiais são mais fortemente afetados pelo magnetismo, e que podem ser ensaiados por partículas magnéticas.", o:["A) Ferromagnético", "B) Metais de base de níquel", "C) Ligas", "D) Diamagnéticas"], r:0},
+  {p:7, q:"28) Marque a alternativa correta:", o:["A) Um defeito localizado a 6mm abaixo da superfície de uma barra de 12mm de diâmetro provavelmente não será detectado pelo ensaio de partículas magnética.", "B) Qualquer material metálico pode ser submetido ao ensaio por partículas magnéticas.", "C) Materiais metálicos que tem propriedade de atrair outros materiais ferromagnéticos são denominados paramagnéticos.", "D) As regiões da superfície de uma peça magnética nas quais o campo magnético entra e sai são denominados campo magnéticos."], r:0},
+  {p:7, q:"29) A porção do espaço na qual se faz sentir o efeito magnético produzido pela passagem da corrente elétrica alternada num condutor, ou por uma peça magnetizada, é denominada:", o:["A) Campo magnético", "B) Zona ferromagnética", "C) Zona de saturação", "D) Zona de paramagnética"], r:0},
+  {p:7, q:"30) Uma corrente elétrica que reverte periodicamente sua polaridade ou sentido é:", o:["A) Uma corrente contínua", "B) Uma corrente pulsativa", "C) Uma corrente alternada", "D) Uma corrente constante."], r:2},
+  {p:7, q:"31) Um campo magnético existente nas proximidades de uma barra magnetizada é mais denso:", o:["A) No meio da barra", "B) Corrente alternada de baixa frequência", "C) Aproximadamente de 10cm da barra", "D) Nas extremidades Da barra"], r:3},
+  {p:7, q:"32) O aparecimento de uma trinca numa peça em forma de anel, que foi magnetizada de modo que as linhas de força percorrem o anel, determinará:", o:["A) A formação de polos magnéticos", "B) A alteração dos polos magnéticos existentes no anel", "C) O desaparecimento do polo magnético", "D) O aparecimento de um terceiro polo"], r:0},
+  {p:7, q:"33) Assinale a alternativa correta que completa a seguinte afirmação: Na localização de defeitos em uma peça, a magnetização deve ser feita de forma que o plano principal das descontinuidades sejam:", o:["A) Paralelo as linhas de força", "B) Perpendicular as linhas de força", "C) Indiferente o ensaio não apresenta este tipo de limitação", "D) Em toda a peça"], r:1},
+  {p:7, q:"34) Indique a resposta correta para a afirmativa: Quando uma peça é magnetizada longitudinalmente, todas as descontinuidades serão detectadas. Não interessando a sua direção.", o:["A) A afirmativa é falsa.", "B) A afirmativa é verdadeira."], r:0},
+  {p:7, q:"35) Se as partículas magnéticas apresentarem uma distribuição regular, geralmente de forma circular, na superfície em ensaio, deve-se:", o:["A) Repetir o ensaio em direção oposta", "B) Repetir o ensaio com corrente maior", "C) Rejeitar a peça", "D) Repetir o ensaio com corrente menor"], r:3},
+  {p:7, q:"36) A passagem de corrente elétrica num condutor reto:", o:["A) Determina a formação de polos", "B) Faz com que se desenvolve um campo magnético circular em torno do condutor", "C) Forma um campo magnético circular, se a corrente for alternada", "D) Faz com que se desenvolva um campo magnético longitudinal junto ao condutor."], r:1},
+  {p:7, q:"37) Quando uma peça é magnetizada por uma bobina, o campo magnético induzido é:", o:["A) Residual", "B) Retilíneo", "C) Circular", "D) Longitudinal"], r:3},
+  {p:7, q:"38) Indique um método que produzirá magnetismo circular.", o:["A) Passando corrente atrás da peça.", "B) Colocando a peça num solenoide.", "C) Passando a corrente através de um condutor enrolado na peça.", "D) Não é possível produzir magnetismo circular artificialmente."], r:0},
+  {p:7, q:"39) Que é magnetismo residual?", o:["A) É o magnetismo que permanece num circuito magnético depois da remoção da força magnetizante.", "B) É o magnetismo que possuem as peças metálicas devido ao campo magnético terrestre.", "C) É o magnetismo que a peça apresenta nas vizinhanças dos defeitos e que permite sua detecção.", "D) É o tipo de magnetismo característico do material diamagnéticos."], r:0},
+  {p:7, q:"40) Gauss é a unidade de medida da densidade do campo magnético e está relacionado com:", o:["A) Campo residual", "B) Linhas de força", "C) Corrente", "D) Densidade de fluxo"], r:1}
+
+//PROVA 08
+  {p:8, q:"1- Indique se afirmação abaixo é verdadeira ou falsa. “Qualquer peça que tenha sido examinada por meio de partículas magnéticas dispensa desmagnetização”.", o:["A) verdadeiro", "B) falso."], r:1},
+  {p:8, q:"2- Indique se a afirmação abaixo é verdadeira ou falsa. O teste da bússola para verificar se uma peça está magnetizada não é valido se a peça estiver magnetizada circularmente.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:8, q:"3- Indique se a afirmação abaixo é verdadeira ou falsa. Partes de alumínio são facilmente examinadas por meio de partículas magnéticas.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:8, q:"4- Indique se a afirmação abaixo é verdadeira ou falsa. Para detectar falhas longitudinais em uma barra de aço, o método de magnetização circular é o mais indicado.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:8, q:"5- Marque uma das causas de indicações não relevantes.", o:["A) falta de fusão.", "B) porosidade.", "C) amperagem muito alta.", "D) trinca."], r:2},
+  {p:8, q:"6- Várias peças foram magnetizadas e deixadas sobre uma bancada enquanto aguardam a aplicação das partículas magnéticas e a inspeção. Por que que não se deve atritar ou tocar umas nas outras enquanto não tiverem sido examinadas?", o:["A) para facilitar o manuseio.", "B) para não estragar o preparo da superfície da peça, feito para executar o exame por meio de partículas magnéticas.", "C) para que não ocorra a magnetização que dá origem a escrita magnética.", "D) todas as respostas estão erradas."], r:2},
+  {p:8, q:"7- Que é magnetismo residual?", o:["A) é o magnetismo que possuem as peças metálicas devido ao campo magnético terrestre.", "B) é o tipo de magnetismo característico dos materiais diamagnéticos.", "C) é o magnetismo que a peça apresenta nas vizinhanças dos defeitos, and que permite sua detecção.", "D) é o magnetismo que permanece no circuito magnético depois da remoção da força magnetizante."], r:3},
+  {p:8, q:"8- O ponto a partir do qual a intensidade do campo magnético produzido numa peça permanece invariável por mais que cresça o valor da força magnetizante é denominado:", o:["A) ponto residual.", "B) ponto de saturação.", "C) ponto remanescente.", "D) ponto saliente."], r:1},
+  {p:8, q:"9- O campo magnético existente nas proximidades de uma barra magnetizada é mais denso:", o:["A) na extremidade da barra.", "B) no meio da barra.", "C) aproximadamente no centro da barra."], r:0},
+  {p:8, q:"10- Na localização de defeitos de uma peça, sua magnetização deve ser feita de modo que o plano principal das possíveis descontinuidades:", o:["A) seja perpendicular as linhas de força.", "B) seja paralelo as linhas de força."], r:0},
+  {p:8, q:"11- Indique na relação abaixo o caso em que pode ser usado a magnetização de peças pelo método residual.", o:["A) peças de material de baixa retentividade", "B) peças de formato irregular.", "C) para avaliar as indicações encontradas no exame de peças pelo método contínuo.", "D) peças muito tencionadas."], r:2},
+  {p:8, q:"12- Quando circula corrente elétrica numa bobina, a direção das linhas de força induzidas numa barra colocada dentro da bobina:", o:["A) circular.", "B) longitudinal.", "C) vetorial.", "D) desconhecida."], r:1},
+  {p:8, q:"13- O exame por meio de partículas magnéticas não é indicado para detecção de:", o:["A) dupla laminação.", "B) soldas.", "C) descontinuidades subsuperficiais.", "D) dobras de laminação."], r:0},
+  {p:8, q:"14- O exame por meio de partículas magnéticas fluorescentes difere do exame por meio de partículas magnéticas comuns no que diz respeito ao uso de:", o:["A) correntes mais altas.", "B) luz negra.", "C) partículas mais finamente divididas nas cores preta, cinza.", "D) máquina diferente."], r:1},
+  {p:8, q:"15- Uma peça se tornou magnetizada após ser submetida a uma força magnetizante. Este magnetismo residual é, em relação a força magnetizante que atuava na peça:", o:["A) da mesma intensidade.", "B) mais fraco.", "C) mais forte."], r:1},
+  {p:8, q:"16- Que tipo de magnetização é produzida pela passagem de corrente elétrica através de uma peça:", o:["A) circular.", "B) longitudinal."], r:0},
+  {p:8, q:"17- Um banho para lavar uma peça após o seu exame por meio de partículas magnéticas:", o:["A) é desnecessário.", "B) é necessário para remover as partículas mais quando isso é requerido.", "C) promove a lubrificação da peça.", "D) é necessário para remover o magnetismo residual."], r:1},
+  {p:8, q:"18- A indicação produzida por um defeito superficial é:", o:["A) fina e distinta.", "B) alta e larga.", "C) larga e indefinida.", "D) em forma de cruz."], r:0},
+  {p:8, q:"19- Marque a sequência básica dos exames por meio de partículas magnéticas. 1- remoção do penetrante. 2- inspeção. 3- exposição 4- limpeza e magnetização 5- fixação e lavagem 6- aplicação de partículas magnéticas 7- desmagnetização", o:["A) 4, 7, 5, 3.", "B) 4, 6, 7, 2.", "C) 4, 6, 2, 7.", "D) 4, 6, 5, 1."], r:2},
+  {p:8, q:"20- Indique um método que produza magnetismo circular:", o:["A) passando corrente através da peça em exame.", "B) colocando a peça num solenóide.", "C) passando corrente através de um condutor enrolado na peça."], r:0},
+  {p:8, q:"21- Qual o tipo de corrente geralmente usada em aparelhos desmagnetizadores:", o:["A) corrente alternada.", "B) corrente contínua.", "C) corrente contínua de amperagem crescente.", "D) corrente alternada de alta voltagem, geralmente 3.800 V."], r:0},
+  {p:8, q:"22- Quando estiver sendo feito exame por via úmida com processo contínuo, o fluxo da suspensão que banha a peça, proveniente de uma mangueira, deve ser interrompido:", o:["A) alguns segundos antes da interrupção da força magnetizante.", "B) enquanto a corrente estiver circulando.", "C) imediatamente antes da aplicação da corrente.", "D) 30 segundos após a interrupção da força magnetizante."], r:0},
+  {p:8, q:"23- Nas vizinhanças de uma bobina, o local onde o campo magnético possui maior intensidade:", o:["A) na periferia, no lado externo.", "B) na periferia, no lado interno.", "C) no centro.", "D) na extremidade correspondente ao pólo sul."], r:2},
+  {p:8, q:"24- No exame por partículas magnéticas, a limpeza da peça deve ser feita:", o:["A) antes e depois do exame.", "B) depois.", "C) antes."], r:0},
+  {p:8, q:"25- O método mais eficiente para examinar peças de material de baixa retentividade por meio de partículas magnéticas é:", o:["A) exame por via seca com magnetização contínua.", "B) exame por via seca com magnetização residual.", "C) exame por via úmida com magnetização contínua.", "D) exame por via úmida com magnetização residual."], r:2},
+  {p:8, q:"26- Indique o principal fator a considerar na seleção da técnica a ser adotada para examinar uma peça por meio de partículas magnéticas.", o:["A) valor da densidade de fluxo.", "B) tipo de corrente.", "C) direção do campo magnético.", "D) tamanho da peça."], r:2},
+  {p:8, q:"27- Indique se afirmação abaixo é verdadeira ou falsa. O exame por via úmida com magnetização residual pode ser aplicado em qualquer peça de aço.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:8, q:"28- Indique se afirmação abaixo é verdadeira ou falsa. Um defeito localizado a 6mm abaixo da superfície de uma barra de 12mm de diâmetro não será detectado pelo exame de partículas magnéticas.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:8, q:"29- Indique se afirmação abaixo é verdadeira ou falsa. As linhas de força do campo magnético sempre formam um circuito fechado.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:8, q:"30- Indique se afirmação abaixo é verdadeira ou falsa. Em qualquer indicação obtida num exame por meio de partículas magnéticas sempre existe um pólo norte e um pólo sul.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:8, q:"31- Indique se afirmação abaixo é verdadeira ou falsa. Qualquer peça deve ser desmagnetizada após sofrer exame por meio de partículas magnéticas, excetuando-se as que posteriormente receberem tratamento térmico.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:8, q:"32- Indique se afirmação abaixo é verdadeira ou falsa. Os defeitos existentes na superfície de uma peça podem ser detectados efetuando-se exame por meio de partículas magnéticas usando corrente alternada.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:8, q:"33- Indique se afirmação abaixo é verdadeira ou falsa. Depois de serem examinadas por meio de partículas magnéticas, as peças devem receber tratamento de limpeza.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:8, q:"34- Indique se afirmação abaixo é verdadeira ou falsa. As características das suspensões empregadas no exame por via úmida devem ser verificadas periodicamente.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:8, q:"35- Indique se afirmação abaixo é verdadeira ou falsa. A corrente de magnetização deve ter a menor voltagem possível.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:8, q:"36- Indique se afirmação abaixo é verdadeira ou falsa. A eficiência de um aparelho desmagnetizador é maior nas proximidades do lado interno da bobina.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:8, q:"37- Indique se afirmação abaixo é verdadeira ou falsa. Todas as peças que apresentarem indicações ao serem examinadas por meio de partículas magnéticas devem ser reparadas.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:8, q:"38- Indique se afirmação abaixo é verdadeira ou falsa. A presença de carepa em peças submetidas a exame por meio de partículas magnéticas causa frequentemente a formação de indicações.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:8, q:"39- Indique se afirmação abaixo é verdadeira ou falsa. Quando uma peça vai ser examinada com partículas magnéticas, a limpeza de sua superfície é desnecessária desde que esteja protegida com graxa.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:8, q:"40- O método de magnetização a ser usado em partes feitas de aço doce com baixa retentividade é o:", o:["A) contínuo.", "B) residual."], r:0}
+
+//PROVA 09
+  {p:9, q:"1- Quando uma peça é magnetizada por uma bobina, o campo magnético induzido é:", o:["A) residual.", "B) longitudinal.", "C) retilíneo.", "D) circular."], r:1},
+  {p:9, q:"2- Para detectar defeitos longitudinais no interior de um furo existente numa peça deve-se:", o:["A) aumentar a amperagem.", "B) magnetizar a peça usando uma bobina.", "C) estabelecer o fluxo de corrente num condutor que passe pelo centro do furo.", "D) passar a corrente através da peça."], r:2},
+  {p:9, q:"3- Qual a razão para que haja bom contato elétrico na maior área possível, ao examinar uma peça por meio de partículas magnéticas, utilizando a técnica de contato direto?", o:["A) para que não haja fulga do campo magnético.", "B) para evitar que seja desnecessário desmagnetizar a peça posteriormente.", "C) evitar o superaquecimento da peça nos pontos de injeção de corrente e permitir o uso de correntes mais intensas.", "D) para fechar o circuito magnético com maior eficiência."], r:2},
+  {p:9, q:"4- Indique se afirmação abaixo é verdadeira ou falsa. O preparo da suspensão de partículas magnéticas, no caso de utilizar pasta misturada com óleo, pode ser feito diretamente no tanque do equipamento.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:9, q:"5- Indique a maneira mais simples para verificar se uma peça é magnetizável.", o:["A) verificando se uma peça é atraída por um ímã.", "B) aplicando partícula magnética na peça.", "C) verificando se uma peça similar é atraída pela peça em questão.", "D) usando um medidor de campo magnético."], r:0},
+  {p:9, q:"6- Qual é a maneira de verificar se uma peça foi desmagnetizada?", o:["A) aplicação de um ímã na peça.", "B) verificação por um medidor de campo magnético.", "C) tirando uma radiografia da peça.", "D) por uma observação cuidadosa de como a partícula magnética se distribui na superfície da peça."], r:1},
+  {p:9, q:"7- Que é um exame por meio de partículas magnéticas?", o:["A) consiste na magnetização e exame de pequenas peças.", "B) é um exame não destrutivo aplicável a materiais ferromagnéticos.", "C) consiste no exame de pequenas partículas de materiais ferromagnéticos."], r:1},
+  {p:9, q:"8- Em que consiste o exame por via úmida com magnetismo residual?", o:["A) consiste em umedecer as peças que apresentaram magnetismo residual.", "B) consiste na aplicação de suspensão de partículas magnéticas em peças de materiais ferromagnéticos após interromper a corrente elétrica de magnetização.", "C) consiste no exame do resíduo do tanque da suspensão.", "D) consiste na aplicação de partícula magnética na forma de pó em peças de materiais ferromagnéticos após interromper a corrente elétrica de magnetização."], r:1},
+  {p:9, q:"9- no exame por via seca é mais usado", o:["A) corrente contínua correspondente a retificação de meia onda de corrente alternada de 110 volts.", "B) corrente de alta frequência tipo VHF.", "C) corrente de alta voltagem e baixa amperagem.", "D) corrente contínua correspondente a retificação completa das ondas de corrente alternada, trifásica de 440 volts."], r:0},
+  {p:9, q:"10- O exame por via úmida com magnetização contínua é caracterizado:", o:["A) pelo método de aplicação da solução.", "B) pelo contínuo umedecimento da peça.", "C) pela aplicação da suspensão enquanto circula a corrente de magnetização.", "D) pela manutenção do fluxo da suspensão após o corte da corrente de magnetização."], r:2},
+  {p:9, q:"11- Em que consiste o exame por via seca", o:["A) Urbanite na obtenção de corrente de magnetização por meio de baterias secas.", "B) consiste na obtenção de corrente de magnetização por meio de bateria seca.", "C) consiste na utilização de partícula magnética na forma de pó para examinar peças de material ferromagnético.", "D) consiste em secar previamente as peças antes de aplicar a corrente de magnetização."], r:2},
+  {p:9, q:"12- Por que deve ser feita a limpeza das peças antes de magnetizá-las?", o:["A) para reduzir o consumo de energia de magnetização.", "B) para reduzir o aparecimento de indicações falsas.", "C) para não sujar o local de trabalho.", "D) para facilitara limpeza após o exame."], r:1},
+  {p:9, q:"13- Indique as razões que justifiquem a desmagnetização prévia de peças que serão examinadas por meio de partículas magnéticas.", o:["A) facilitar o manuseio de peças grandes.", "B) assegurar a eliminação de indicações não relevantes permanecendo as demais.", "C) impedir a formação de correntes elétricas geradas pelo movimento relativo de peças magnetizadas com outras peças metálicas.", "D) facilitar a limpeza de peças paramagnéticas."], r:1},
+  {p:9, q:"14- Por que se usa luz negra no exame com partículas magnéticas fluorescentes?", o:["A) para proteger os olhos do operador.", "B) para que as indicações sejam detectadas com maior facilidade.", "C) para identificar quais indicações não relevantes correspondem à defeitos.", "D) para salientar o campo magnético."], r:1},
+  {p:9, q:"15- Por que deve ser feita a limpeza das peças após sua desmagnetização?", o:["A) para evitar a corrosão das peças examinadas.", "B) para reaproveitar as partículas magnéticas da suspensão.", "C) para assegurar a remoção das partículas magnéticas.", "D) para evitar a ocorrência de trincas durante o tratamento térmico."], r:2},
+  {p:9, q:"16- Que se entende por veículo líquido", o:["A) um líquido que possui partículas magnéticas em suspensão, por meio do qual elas são transportadas para a superfície da peça em exame.", "B) um produto para remover as partículas magnéticas da superfície da peça após executado o exame.", "C) um produto para limpeza da peça antes do exame.", "D) um veículo para transporte de líquido."], r:0},
+  {p:9, q:"17- Quando uma corrente elétrica circula num condutor de cobre", o:["A) forma-se linhas de força paralelas ao eixo do condutor.", "B) forma-se um campo magnético em torno do condutor.", "C) forma-se polos magnéticos no condutor."], r:1},
+  {p:9, q:"18- A desmagnetização de uma peça geralmente não é necessária se", o:["A) a peça for de aço carbono.", "B) a peça for pequena.", "C) for utilizado o método de magnetização contínua.", "D) a peça receberá tratamento para aumento de dureza após o exame."], r:3},
+  {p:9, q:"19- A intensidade do campo magnético é determinada", o:["A) pela amperagem da corrente de magnetização.", "B) pelo tempo de circulação da corrente.", "C) pela voltagem da corrente de magnetização."], r:0},
+  {p:9, q:"20- Qual a direção das linhas de força do campo magnético em relação à direção da corrente de magnetização", o:["A) ângulo de 45° .", "B) todas as direções.", "C) normal.", "D) paralela."], r:2},
+  {p:9, q:"21- A magnetização por meio de um condutor central", o:["A) deve ser utilizada apenas para detecção de defeitos cuja direção principal é paralela as linhas de força do campo magnético produzido.", "B) não é recomendável, tendo em vista que o calor gerado pela passagem de corrente no condutor prejudica a eficiência do exame.", "C) constitui um meio efetivo de magnetização de peças com vistas a determinar a presença de defeitos em superfícies internas.", "D) é a maneira correta de magnetizar peças de materiais diamagnéticos com vista à detecção de defeitos internos."], r:2},
+  {p:9, q:"22)-Na magnetização circular, a força magnetizante é expressa em ampères. Qual é o termo usado para expressar a força de magnetização na magnetização longitudinal.", o:["A) volts.", "B) ampere-espiras.", "C) volts-amperes.", "D) ampères."], r:1},
+  {p:9, q:"23)-Indique se a afirmação abaixo é verdadeira ou falsa. Todas as partes que apresentem indicações devem ser esmerilhadas.", o:["A) verdadeiro", "B) falso"], r:1},
+  {p:9, q:"24)-Indique se a afirmação abaixo é verdadeira ou falsa. É desnecessário remover a graxa que protege a superfície das peças contra corrosão para submetê-las ao exame por meio de partículas magnéticas.", o:["A) verdadeiro", "B) falso"], r:1},
+  {p:9, q:"25)-Indique se a afirmação abaixo é verdadeira ou falsa. O processo empregado para desmagnetizar uma peça consiste simplesmente em colocar a peça no interior de uma bobina, estabelecendo e interrompendo o circuito logo após a passagem da corrente.", o:["A) verdadeiro", "B) falso"], r:1},
+  {p:9, q:"26)-Quando a desmagnetização de uma peça é feita pela técnica do contato direto, a força magnetizante usada para desmagnetizar deve ser.", o:["A) igual a força magnetizadora que magnetizou a peça.", "B) maior do que a força magnetizadora que magnetizou a peça.", "C) de qualquer valor", "D) menor do que a força magnetizadora que magnetizou a peça."], r:1},
+  {p:9, q:"27)-Indique se a afirmação abaixo é verdadeira ou falsa. O procedimento para examinar uma peça por meio de partículas magnéticas deve ser sempre previamente qualificado.", o:["A) verdadeiro", "B) falso"], r:0},
+  {p:9, q:"28)-Indique se a afirmação abaixo é verdadeira ou falsa. O pó magnético de cor preta dá um bom contraste em superfícies escurecidas ou oxidadas por tratamento térmico.", o:["A) verdadeiro", "B) falso"], r:1},
+  {p:9, q:"29) Se uma barra magnética é curvada de modo a assumir forma circular, estando suas extremidades encostadas uma na outra:", o:["A) ainda assim terá um polo sul e um polo norte.", "B) sua magnetização aumentará.", "C) haverá apenas um polo no centro do círculo.", "D) sua polaridade desaparecerá."], r:3},
+  {p:9, q:"30- O aparecimento de uma trinca numa peça em forma de anel, que foi magnetizada de modo que as linhas de força percorrem o anel, determinará:", o:["A) a formação de polos magnéticos.", "B) o aparecimento de um terceiro polo.", "C) a alteração da posição dos polos magnéticos existentes no anel.", "D) o desaparecimento do campo magnético."], r:0},
+  {p:9, q:"31- A passagem de corrente elétrica num condutor reto", o:["A) determina a formação de polos.", "B) faz com que se desenvolva um campo magnético longitudinal junto ao condutor.", "C) faz com que se desenvolva um campo magnético circular em torno do condutor.", "D) forma um campo magnético circular se a corrente for alternada e longitudinal se a corrente for contínua."], r:2},
+  {p:9, q:"32- A passagem de corrente elétrica num condutor que dá uma volta numa peça faz que se desenvolva um campo magnético na peça se:", o:["A) a peça for de seção circular.", "B) a peça for de material ferromagnético.", "C) a corrente for muito fraca.", "D) a peça estiver trincada."], r:1},
+  {p:9, q:"33- A magnetização circular é indicada para detecção de", o:["A) defeitos existentes próximos ao eixo de barras cilíndricas.", "B) trincas longitudinais.", "C) trincas circunferenciais.", "D) falhas em tubulações."], r:1},
+  {p:9, q:"34- No exame por meio de partículas magnéticas, qual dos defeitos relacionados abaixo é mais difícil de detectar, supondo que estejam na mesma posição relativa, numa peça pequena:", o:["A) risco.", "B) trinca subsuperficial.", "C) trinca superficial.", "D) lasca."], r:0},
+  {p:9, q:"35- Usando-se a magnetização circular, a corrente para o teste de peças é geralmente determinada:", o:["A) pelo comprimento da peça.", "B) pelo tipo de material da peça.", "C) pelo diâmetro da peça.", "D) pela forma da peça."], r:2},
+  {p:9, q:"36- O campo magnético no interior de uma bobina é afetado", o:["A) todas as respostas estão certas.", "B) pelo diâmetro da bobina.", "C) pelo número de espiras da bobina.", "D) pela corrente elétrica que circula na bobina."], r:0},
+  {p:9, q:"37- O líquido empregado no exame por via úmida e corretamente denominado:", o:["A) líquido magnético.", "B) líquido de lavagem.", "C) suspensão.", "D) solução."], r:2},
+  {p:9, q:"38- A suspensão usada no exame por via úmida deve ser uniforme:", o:["A) para que o fluxo magnético seja uniforme.", "B) para assegurar maior mobilidade das partículas magnéticas.", "C) porque diferentes composições da suspensão levarão a diferentes resultados no exame.", "D) caso contrário ocorrerão indicações de trinca no local onde não existem."], r:2},
+  {p:9, q:"39- A eficiência da detecção de defeitos profundos em soldas depende", o:["A) da limpeza da superfície que devem estar isentas de escória, carepa, graxa, etc.", "B) da técnica de soldagem.", "C) do tratamento térmico que a peça tiver recebido.", "D) todas estão certas."], r:0},
+  {p:9, q:"40- Indique se a afirmação abaixo é verdadeira ou falsa. A magnetização de uma barra, de forma que seja mínimo o vazamento de campo magnético é obtida colocando a barra entre os contactores de uma máquina especial para exame por meio de partículas magnéticas.", o:["A) verdadeiro.", "B) falso."], r:0}
+
+//PROVA 10
+  {p:10, q:"1- Uma peça é examinada por meio de partículas magnéticas, sendo magnetizada primeiramente pelo método contínuo e posteriormente pelo método do magnetismo residual. Se em ambos os casos aparecer a mesma indicação provavelmente se trata de", o:["A) uma indicação não relevante.", "B) uma descontinuidade grave, de dimensões significativas.", "C) um defeito profundo."], r:1},
+  {p:10, q:"2- Indique se a afirmação abaixo é verdadeira ou falsa. Um campo magnético com linhas de força circulares é facilmente medido com medidor de campo.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:10, q:"3- Indique se a afirmação abaixo é verdadeira ou falsa. O comprimento de uma peça que é magnetizada pela passagem de corrente elétrica entre suas extremidades não afeta a intensidade do campo magnético produzido.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:10, q:"4- No exame por meio de partículas magnéticas que tipo de corrente de magnetização é mais vantajoso, quando é requerida a desmagnetização total da peça após o exame.", o:["A) corrente contínua.", "B) corrente alternada.", "C) corrente contínua derivada da retificação de onda inteira de corrente alternada.", "D) corrente contínua de meia onda."], r:1},
+  {p:10, q:"5- Qual dos seguintes tipos de corrente usados em retificação detectará com maior eficiência a presença de trincas abertas para a superfície.", o:["A) corrente contínua.", "B) corrente contínua de meia onda.", "C) corrente alternada.", "D) pulsos de corrente."], r:2},
+  {p:10, q:"6- Indique a condição de superfície que não interferirá no exame de peças por meio de partículas magnéticas, por via úmida.", o:["A) peças pintadas.", "B) peças com espessa camada de oxidação.", "C) peças recém usinadas.", "D) peças cromadas."], r:2},
+  {p:10, q:"7- Indique se a afirmação abaixo é verdadeira ou falsa. Quando os contactores são fixados as extremidades de uma barra cilíndrica, e é estabelecida a passagem de corrente elétrica na barra, o campo magnético formado é circular.", o:["A) verdadeiro.", "B) falso."], r:0},
+  {p:10, q:"8- Em qual dos seguintes produtos deve ser banhada uma peça, após sua lavagem com detergente, para obter o melhor resultado no exame por meio de partículas magnéticas em suspensão em óleo.", o:["A) terebentina.", "B) querosene.", "C) gasolina."], r:1},
+  {p:10, q:"9- Indique os veículos mais usados no preparo de suspensões para exame por meio de partículas magnéticas por via úmida.", o:["A) água, óleo leve, querosene.", "B) glicerina, condensado, óleo leve.", "C) querosene, solução de nitrato de prata, ar comprimido.", "D) água, querosene, glicerina.", "E) éter, água oxigenada, óleo leve."], r:0},
+  {p:10, q:"10- A amperagem empregada para magnetizar circularmente um parafuso de 12mm de diâmetro é:", o:["A) 200A.", "B) 500A.", "C) 1000A.", "D) 1700A."], r:1},
+  {p:10, q:"11- Indique se a afirmação abaixo é verdadeira ou falsa. No preparo de uma suspensão em que o veículo é óleo leve, a mistura das partículas secas com óleo pode ser feita diretamente.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:10, q:"12- Porque é importante que a suspensão se mantenha livre de fiapos, poeira e outros contaminantes:", o:["A) materiais estranhos na suspensão podem interferir na distribuição, concentration, e comportamento das partículas magnéticas.", "B) porque causam bloqueio do campo magnético aplicado alterando completamente o resultado do exame.", "C) porque a peça em exame, sob ação de uma suspensão fora da especificação e do campo magnético, sofre corrosão intensa."], r:0},
+  {p:10, q:"13- Indique qual dos defeitos relacionados abaixo pode ser causado por usinagem", o:["A) risco.", "B) solda de selagem.", "C) trinca de rechupe.", "D) dobra de laminação."], r:0},
+  {p:10, q:"14)-Qual a amperagem que deve ser usada no exame de chapas de aço de 20mm de espessura, por meio de partículas magnéticas, quando for usada a técnica dos eletrodos, sendo de 150mm a distância entre os eletrodos.", o:["A) 1000 a 1300 ampères.", "B) 600 a 750 ampères. <19mm –x 3,54 a 4,33mm;≧19mm-x3,93 a 4,92mm", "C) 250 a 400 ampères.", "D) 800 a 1000 ampères."], r:1},
+  {p:10, q:"15- Indique se a afirmação abaixo é verdadeira ou falsa. Quando a solda de uma peça é examinada quanto a defeitos superficiais, a peça deve ser posicionada, preferivelmente, de modo que a superfície em exame fique na posição horizontal.", o:["A) verdadeiro", "B) falso"], r:0},
+  {p:10, q:"16- Indique se a afirmação abaixo é verdadeira ou falsa. Ao examinar uma peça pela técnica dos eletrodos a eficiência do exame é a mesma nos dois casos abaixo. Caso 1-650 ampères por 150mm de distância entre eletrodos. Caso2-1300 ampères por 300mm de distância entre eletrodos.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:10, q:"17- Indique os dois defeitos de solda que podem ser detectadas pelo exame por meio de partículas magnéticas.", o:["A) laminação e porosidade.", "B) gotas frias e dobras.", "C) bolhas de gás e lascas.", "D) trinca e falta de fusão."], r:3},
+  {p:10, q:"18- Indique os dois defeitos de peças fundidas que podem ser detectados pelo exame por meio de partículas magnéticas", o:["A) mordeduras e porosidades.", "B) laminações e lascas.", "C) segregações e lascas.", "D) rechupes e gotas frias."], r:3},
+  {p:10, q:"19- Indique os dois defeitos de peças forjadas que podem ser detectados pelo exame por meio de partículas magnéticas", o:["A) porosidade e falta de penetração.", "B) mordeduras e inclusions de escória.", "C) rechupes e segregações.", "D) trincas e dobras."], r:3},
+  {p:10, q:"20- Indique se a afirmação abaixo é verdadeira ou falsa. Linhas de escoamento em peças forjadas são causa de rejeição de peças.", o:["A) verdadeiro.", "B) falsa."], r:1},
+  {p:10, q:"21- Indique se a afirmação abaixo é verdadeira ou falsa. O exame de uma solda é feito magnetizando-a sucessivamente em duas direções. Se a corrente usada na primeira magnetização é de 750 ampères, e de 400 ampères na segunda magnetização, a peça deve ser desmagnetizada entre as duas magnetizações.", o:["A) falsa.", "B) verdadeira."], r:1},
+  {p:10, q:"22- Indique se a afirmação abaixo é verdadeira ou falsa. O exame de uma solda é feito magnetizando-a sucessivamente em duas direções. Se a corrente usada na primeira magnetização é de 400 ampères, e de 750 ampères na segunda magnetização, a peça deve ser desmagnetizada entre as duas magnetizações.", o:["A) verdadeira.", "B) falsa."], r:1},
+  {p:10, q:"23- Indique se a afirmação abaixo é verdadeira ou falsa. O aquecimento de uma peça de material ferromagnético a 800 graus centígrados fará com que ela se magnetize.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:10, q:"24- Indique se a afirmação abaixo é verdadeira ou falsa. Irregularidades superficiais, tais como os pontos altos da cobertura dos cordões de solda, apresentam maior tendência de produzir indicações do que trincas.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:10, q:"25- Indique se a afirmação abaixo é verdadeira ou falsa. Peças que possuem superfície usinada, com bom acabamento, devem ser testadas pelo método do contato direto, com injeção de corrente através de eletrodos.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:10, q:"26- Se uma peça é golpeada ou queimada pelos eletrodos ao ser submetida a magnetização, deve ser feito o seguinte:", o:["A) retestar a peça.", "B) nada deve ser feito, por ser normal este tipo de ocorrência.", "C) rejeitar a peça.", "D) esmerilhar a região, reexaminar e informar ao encarregado."], r:3},
+  {p:10, q:"27- Se os cabos de uma máquina para exame por meio de partículas magnéticas forem enrolados em torno de uma peça, sendo estabelecido o fluxo de corrente na bobina assim formada, qual o tipo de magnetização que se produzirá na peça.", o:["A) solenoide.", "B) circular.", "C) circunferencial distorcido.", "D) longitudinal."], r:3},
+  {p:10, q:"28- Quando um campo magnético é induzido em uma peça pelo método do contato direto, com os eletrodos afastados de 150mm, o campo é:", o:["A) solenoide.", "B) circular.", "C) longitudinal.", "D) circular distorcido."], r:1},
+  {p:10, q:"29- O melhor método de aplicação das partículas magnéticas no exame por via seca consiste em:", o:["A) imergir a peça em exame numa piscina contendo partículas magnéticas.", "B) derramar as partículas magnéticas, colocadas em latas de um quilo, sobre a peça em exame, na quantidade necessária.", "C) aspergi-las sobre a peça em exame, em forma de pó."], r:2},
+  {p:10, q:"30- Quando a distribuição das partículas não apresenta uma forma definida, como deveria ocorrer, a causa provável é:", o:["A) amperagem excessiva.", "B) efeito da temperatura.", "C) emprego de partículas inadequadas.", "D) amperagem muito baixa."], r:3},
+  {p:10, q:"31- Indique se a afirmação abaixo é verdadeira ou falsa. O exame por via úmida é superior ao exame por via seca para detecção de defeitos subsuperficiais.", o:["A) verdadeiro.", "B) falsa."], r:1},
+  {p:10, q:"32- Qual dos seguintes tipos de defeitos normalmente encontrados no exame por meio de partículas magnéticas é geralmente mais grave:", o:["A) subsuperficial.", "B) superficiais."], r:1},
+  {p:10, q:"33- Após un curto período de serviço as peças de uma máquina são submetidas a exame por meio de partículas magnéticas os defeitos mais prováveis de serem encontrados são:", o:["A) porosidade.", "B) falta de penetração.", "C) rechupe.", "D) trincas decorrentes de fadiga."], r:3},
+  {p:10, q:"34- Trincas decorrentes de fadiga são:", o:["A) subsuperficiais.", "B) superficiais."], r:1},
+  {p:10, q:"35- Indique se a afirmação abaixo é verdadeira ou falsa. Uma maneira de auxiliar a interpretação de uma indicação consiste em verificar se ela corresponde a uma descontinuidade aberta para a superfície. Isto é feito removendo as partículas magnéticas da região de interesse e examinando a superfície com vista armada e desarmada.", o:["A) falso.", "B) verdadeiro."], r:1},
+  {p:10, q:"36- Indique se a afirmação abaixo é verdadeira ou falsa. Um inspetor pode melhorar significativamente seu conhecimento aproveitando as oportunidades que tiver para verificar o esmerilhamento, corte a carvão ou goivagem dos locais que apresentaram defeitos inaceitáveis.", o:["A) falsa.", "B) verdadeiro."], r:1},
+  {p:10, q:"37- Indique se a afirmação abaixo é verdadeira ou falsa. Materiais muito duros não devem ser atacados quimicamente por um inspetor sem acompanhamento de um supervisor qualificado.", o:["A) falsa.", "B) verdadeiro."], r:1},
+  {p:10, q:"38- Para fazer sentido, a ordem para examinar uma peça por meio de partículas magnéticas deve fazer referência:", o:["A) a fabricação e manual de serviço da peça.", "B) ao desenho da peça, que indique que deve ser examinada.", "C) ao método de exame e condições de serviço.", "D) ao procedimento a ser usado e ao padrão de aceitação."], r:3},
+  {p:10, q:"39- Um defeito é", o:["A) uma indicação formada por partículas magnéticas.", "B) uma inclusão de escória com 50mm de comprimento.", "C) todas as alternativas estão corretas.", "D) uma descontinuidade prejudicial à qualidade, a aparência e/ou desempenho de uma peça."], r:3},
+  {p:10, q:"40- Um forjado foi reparado por soldagem. A inspeção por partículas magnéticas do reparo revelou indicações irregulares, paralelas aos passes de solda. As indicações localizavam-se perto do centro do cordão e ns extremidades desviavam-se levemente da direção axial do cordão. A interpretação correta destas indicações seriam:", o:["A) poros.", "B) escórias.", "C) trincas.", "D) falta de fusão."], r:3}
+
+//PROVA 11
+  {p:11, q:"1- Quando era feito o exame por meio de partículas magnéticas em peças de aço com superfície polida, verifica-se que muitas apresentavam indicações com aparência que variava desde traços finos até agrupamentos difusos. Aparentemente, estas indicações não apresentavam um comportamento padrão no que diz respeito a sua orientação ou posição que apareciam nas peças. Após a desmagnetização, as indicações não tornavam a aparecer em novo exame. A que correspondiam as indicações observadas.", o:["A) porosidade.", "B) dobras de laminação.", "C) soldas de metais diferentes.", "D) escrita magnética."], r:3},
+  {p:11, q:"2- Qual dos materiais abaixo permite detectar mais facilmente a presença de defeitos internos, por possuir maior permeabilidade magnética:", o:["A) aços de baixo carbono.", "B) aços inoxidáveis austeníticos.", "C) duralumínio.", "D) aços de alto carbono."], r:0},
+  {p:11, q:"3- Geralmente ocorrem descontinuidades transversais em barras de aço laminadas?", o:["A) não. O processo de obtenção destas barras, por laminação, não produz nenhuma descontinuidade.", "B) sim. Os defeitos são sempre transversais.", "C) os defeitos são transversais em barras de aço carbono, variando nos outros casos, dependendo do teor de liga.", "D) não. As descontinuidades se orientam na direção de laminação, longitudinalmente."], r:3},
+  {p:11, q:"4- Descontinuidades em chapas, causadas por inclusões ou porosidades, no lingote que deu origem ao laminado, são geralmente planas e paralelas à superfície, e recebem a denominação de:", o:["A) costuras.", "B) trincas.", "C) dobras.", "D) laminações."], r:3},
+  {p:11, q:"5- Em qual direção, em relação ao eixo da peça, ocorrem as dobras de forjamento:", o:["A) são sempre encontradas no eixo térmico da peça.", "B) são encontradas na superfície da peça, formando um ângulo de 90 graus com relação ao seu eixo.", "C) podem existir em qualquer lugar, sendo orientados na direção em que a peça foi trabalhada.", "D) podem ocorrer em qualquer lugar da superfície e não tem, necessariamente, relacionamento com a direção do eixo da peça."], r:3},
+  {p:11, q:"6- Indique se a afirmação abaixo é verdadeira ou falsa. É necessário saber quantas espiras existem numa bobina para calcular a força magnetizante. Esta informação está marcada em algumas bobinas. Caso contrário, deve ser obtida do fabricante e registrada para uso quando necessário.", o:["A) falsa.", "B) verdadeiro."], r:1},
+  {p:11, q:"7- Indique se a afirmação abaixo é verdadeira ou falsa. Quando algumas peças de aço devem ser soldadas com arco elétrico manual, o magnetismo residual que possuírem atrai o metal de adição. Isto é benefício quanto a disposição do metal que foi depositado, sendo vantajoso no que se refere a economia e qualidade.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:11, q:"8- O vazamento do campo magnético num determinado local de uma peça faz com que as partículas magnéticas sejam coletadas e mantidas sobre este local. Ao agrupamento de partículas observado numa peça em exame, dá-se o nome de:", o:["A) descontinuidade.", "B) defeito.", "C) indicação."], r:2},
+  {p:11, q:"9- Ocorrem casos em que as peças em exame apresentam interrupção de sua estrutura física normal, ou de sua configuração, por porosidade, dobras de laminação, dobras de forjamento, etc. que possuem características tais que são aceitáveis. Ao serem examinadas por meio de partículas magnéticas, o laudo relativo às indicações resultantes de ocorrências desta natureza deve classificá-las como:", o:["A) defeitos.", "B) indicações.", "C) descontinuidades."], r:2},
+  {p:11, q:"10- Ocorrem casos em que as partículas magnéticas são atraídas para uma determinada região da superfície de uma peça, devido a um vazamento de campo magnético provocado pela presença de uma trinca, dobra de forjamento ou outra condition não aceitável pelas especificações. Os laudos relativos à ocorrência dessa natureza devem classificá-las como:", o:["A) descontinuidades.", "B) indicações.", "C) defeitos."], r:2},
+  {p:11, q:"11- Indique o procedimento geralmente usado para eliminar as indicações não relevantes, mais que permita a detecção de defeitos:", o:["A) aquecer a peça a 723 graus centígrados.", "B) examinar a peça com yoke, posicionando este aparelho duas vezes, sucessivamente, sobre cada região da peça, sendo a segunda vez a 90 graus com a primeira.", "C) magnetizar a peça novamente prolongando o tempo de magnetização.", "D) desmagnetizar e reinspecionar convenientemente a peça."], r:3},
+  {p:11, q:"12- Indique se a afirmação abaixo é verdadeira ou falsa. Ficarão magnetizadas todas as peças que estiverem a menos de meio metro de distância livre do local onde é feito o exame por meio de partículas magnéticas em outras peças.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:11, q:"13- Indique qual o grupo de descontinuidades abaixo podem ser encontradas em peças fundidas:", o:["A) costuras.", "B) rasgos e costuras.", "C) rechupes, costuras e laminações.", "D) bolhas de gás, rasgos e rechupes."], r:3},
+  {p:11, q:"14- Indique qual o grupo de descontinuidades abaixo, podem ser encontradas em peças forjadas:", o:["A) rechupes e escórias.", "B) trincas, falta de fusão e mordeduras.", "C) dobras.", "D) dobras e trincas."], r:3},
+  {p:11, q:"15- Ao submeter peças que já estiveram em serviço a um exame por meio de partículas magnéticas, qual o tipo de descontinuidades que tem maior probabilidade de ser determinada:", o:["A) falta de fusão.", "B) dobra de laminação.", "C) porosidade.", "D) trinca de fadiga."], r:3},
+  {p:11, q:"16- Dois fatores que devem ser considerados ao selecionar o método de magnetização de uma peça são:", o:["A) temperatura e tensão de trabalho da peça.", "B) se a peça será submetida a exame por meio de raio X ou raios gamas posteriormente.", "C) o peso atômico e o ponto de fusão do material da peça.", "D) forma e material da peça."], r:3},
+  {p:11, q:"17- Em que tipo de magnetização se usa a formula ampères-espiras 45.000/L/D.", o:["A) circular", "B) longitudinal"], r:1},
+  {p:11, q:"18- Qual a amperagem que deve circular numa bobina de cinco voltas para magnetizar uma barra de aço de 75mm de diâmetro e 250mm de comprimento.", o:["A)14.000A.", "B)1.500A.", "C)27.000A.", "D) 2.700A."], r:3},
+  {p:11, q:"19- Para exame por meio de partículas magnéticas fluorescentes, via úmida, a lâmpada de vapor de mercúrio mais indicada e a que tem a potência de:", o:["A) 200 watts.", "B) 50 watts.", "C) 75 watts.", "D) 100 watts."], r:3},
+  {p:11, q:"20- Indique se a afirmação abaixo é verdadeira ou falsa. Não é necessário substituir os filtros das lâmpadas de vapor de mercúrio quando estes estiverem trincados ou quebrados, apenas quando o material a ser examinado for ferromagnético.", o:["A) verdadeiro.", "B) falso."], r:1},
+  {p:11, q:"21- O filtro e a lâmpada devem ser submetidos a limpeza periodicamente.", o:["A) para dar um aspecto profissional ao laboratório de exames não destrutivos.", "B) porque a acumulação de sujeira e pó permitirá que passe cada vez mais luz visível e menos luz negra.", "C) para remover a sujeira e o pó, que reduzem sensivelmente a transmissão de luz negra."], r:2},
+  {p:11, q:"22- Para a detecção de todas as indicações, a luz negra deve ser:", o:["A) de 18 a 33 velas-metro.", "B) de 7 a 8 velas-metro.", "C) de 82 a 150 velas-metro.", "D) 30 a 33 velas-metros."], r:3},
+  {p:11, q:"23- Quando o campo magnético de uma peça de material ferromagnético atingiu certo valor, tal que não cresce mais, por mais que se aumente a força magnetizante, diz-se que a peça está:", o:["A) magnetizada.", "B) coercitiva.", "C) retentiva.", "D) saturada."], r:3},
+  {p:11, q:"24- Se duas peças iguais forem magnetizadas, uma circularmente e outra longitudinalmente, qual delas apresentará maior magnetismo residual:", o:["A) a que foi magnetizada circularmente.", "B) a que foi magnetizada longitudinalmente."], r:1},
+  {p:11, q:"25- No exame por meio de partículas magnéticas, uma indicação fixada mecanicamente, e não magneticamente, é conhecida por:", o:["A) trincas.", "B) indicação não-relevante.", "C) escrita magnética.", "D) indicação falsa."], r:3},
+  {p:11, q:"26- Indique a maneira mais adequada para examinar por meio de partículas magnéticas a superfície interna do furo com rasgo de chaveta existente no caso de uma engrenagem.", o:["A) magnetização circular com campo magnético paralelo ao rasgo da chaveta.", "B) magnetização circular com campo magnético perpendicular ao rasgo da chaveta.", "C) usando um condutor central."], r:2},
+  {p:11, q:"27- Indique qual das descontinuidades superficiais ou subsuperficiais de peças ferromagnéticas é mais difícil de detectar com exame por meio de partículas magnéticas por via seca.", o:["A) trincas finas.", "B) dobras de forjamento."], r:1},
+  {p:11, q:"28- Indique quando a desmagnetização é necessária:", o:["A) peças de cobre e suas ligas.", "B) peças que vão ser radiografadas.", "C) peças de aço inoxidável austenítico.", "D) peças que trabalharão junto a instrumentos magnéticos sensíveis."], r:3},
+  {p:11, q:"29- Indique quando a desmagnetização é desnecessária:", o:["A) soldas de tubulões de caldeira.", "B) peças que receberão tratamento térmico a 800 graus Celsius.", "C) peças de aço doce de baixa retentividade.", "D) todas as respostas estão corretas."], r:3},
+  {p:11, q:"30- Costuras em barras laminadas são detectadas de forma mais eficiente no exame por meio de partículas magnéticas se for usada magnetização:", o:["A) longitudinal.", "B) por meio de eletrodos.", "C) por campo magnético oscilante.", "D) circular."], r:3},
+  {p:11, q:"31- Defeitos superficiais finos, tais como trincas de fadiga em superfícies retificadas, existentes em peças que já estiveram em serviço, são detectadas de modo mais eficiente no exame por meio de partículas magnéticas se for usado:", o:["A) exame por via seca e magnetização com corrente contínua.", "B) exame por via seca e corrente contínua pulsante, obtida por retificação de meia onda de corrente alternada.", "C) exame por via úmida e corrente contínua pulsante, obtida por retificação de meia onda de corrente alternada.", "D) exame por via úmida e magnetização com corrente alternada."], r:3},
+  {p:11, q:"32- Um exemplo de indicação não relevante, que seria classificada como anomalia magnética ao invés de uma descontinuidade real são:", o:["A) escórias.", "B) trincas.", "C) nenhuma das mencionadas.", "D) mudanças bruscas na dureza da peça."], r:3},
+  {p:11, q:"33- Indique os defeitos da relação abaixo que podem causar rejeição de uma peça:", o:["A) defeitos inerentes aos materiais básicos usados para fabricar a peça.", "B) defeitos que aparecem durante a fase em que a peça esteve em serviço.", "C) defeitos provocados pelo processo de fabricação da peça a partir de materiais básicos.", "D) todos os defeitos citados."], r:3},
+  {p:11, q:"34- Porosidade é defeito causado por qual dos seguintes processos de fabricação de peças:", o:["A) forjamento.", "B) esmerilhamento.", "C) tratamento térmico.", "D) fundição."], r:3},
+  {p:11, q:"35- Quanto mais próximo da superfície estiver a descontinuidade:", o:["A) mais difusa será a indicação que produzirá.", "B) menor será a chance de que produza falhas por fadiga.", "C) menor será o vazamento de campo que produzirá.", "D) mais nítida será a indicação que produzirá."], r:3},
+  {p:11, q:"36- Porque se prefere usar partículas magnéticas fluorescentes em via úmida em vez de pó magnético colorido em alguns casos:", o:["A) para tirar vantagem do efeito das lâmpadas fluorescentes, cujo uso está sendo padronizado para iluminação em muitas plantas.", "B) porque dá melhor resultado no exame de peças grandes e volumosas.", "C) porque é exigido pelas normas, toda vez que se tratam de peças para equipamento agrícola.", "D) para aumentar a velocidade e precisão do ensaio."], r:3},
+  {p:11, q:"37- Indique se a afirmação abaixo é verdadeira ou falsa. Indicações produzidas por trabalho a frio não tornam a aparecer em novo exame por meio de partículas magnéticas se a peça for desmagnetizada.", o:["A) verdadeira.", "B) falsa."], r:1},
+  {p:11, q:"38- Indique os itens da relação abaixo que podem produzir indicações não relevantes:", o:["A) juntas entre materiais desiguais.", "B) juntas brasadas.", "C) trabalho a frio.", "D) todas estas as respostas estão certas."], r:3},
+  {p:11, q:"39- Após detectar todas as descontinuidades de uma peça:", o:["A) a peça deve ser rejeitada.", "B) a peça deve ser reparada pela remoção das descontinuidades.", "C) as trincas devem ser esmerilhadas para medir sua profundidade.", "D) as descontinuidades devem ser avaliadas para verificar se preenchem os requisitos dos padrões de aceitação."], r:3},
+  {p:11, q:"40- É mais fácil remover os defeitos apresentados por peças brutas de fundição do que de peças usinadas porque:", o:["A) as peças fundidas têm superfícies brutas.", "B) as peças usinadas possuem maior teor de liga.", "C) as peças usinadas tendem a apresentar magnetismo.", "D) as tolerâncias dimensionais são maiores nas peças brutas de fundição"], r:3}
+];
+let questoesAtuais = [];
+let indexAtual = 0;
+let respostasUsuario = [];
+
+window.onload = function() {
+    // Aplicar tema salvo
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    atualizarBotaoErros();
+    if (localStorage.getItem('progressoDouglas')) {
+        document.getElementById('btnRetomar').classList.remove('hidden');
+    }
+};
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+}
+
+function atualizarBotaoErros() {
+    const listaErros = JSON.parse(localStorage.getItem('bancoErrosAcumulados') || "[]");
+    const btn = document.getElementById('btnRefazerTudoErrado');
+    const contador = document.getElementById('contadorGlobal');
+    if (listaErros.length > 0) {
+        btn.classList.remove('hidden');
+        contador.innerText = listaErros.length;
+    } else {
+        btn.classList.add('hidden');
+    }
+}
+
+function iniciarSimulado(tipo) {
+    const escolha = document.getElementById('escolhaProva').value;
+    if (tipo === 'total') questoesAtuais = [...bancoQuestoes];
+    else if (tipo === 'especifica') questoesAtuais = bancoQuestoes.filter(q => q.p == escolha);
+    else if (tipo === 'random') questoesAtuais = [...bancoQuestoes].sort(() => 0.5 - Math.random()).slice(0, 40);
+    else if (tipo === 'erros_globais') questoesAtuais = JSON.parse(localStorage.getItem('bancoErrosAcumulados') || "[]");
+
+    if (questoesAtuais.length === 0) return alert("Nenhuma questão encontrada!");
+    indexAtual = 0;
+    respostasUsuario = new Array(questoesAtuais.length).fill(null);
+    exibirQuiz();
+}
+
+function exibirQuiz() {
+    document.getElementById('menu').classList.add('hidden');
+    document.getElementById('quiz').classList.remove('hidden');
+    mostrarQuestao();
+}
+
+function mostrarQuestao() {
+    const q = questoesAtuais[indexAtual];
+    document.getElementById('progresso').innerText = `Questão ${indexAtual + 1} de ${questoesAtuais.length}`;
+    document.getElementById('pergunta').innerText = q.q;
+    
+    let html = "";
+    const jaRespondeu = respostasUsuario[indexAtual] !== null;
+
+    q.o.forEach((opt, i) => {
+        let classeExtra = "";
+        if (jaRespondeu) {
+            if (i === q.r) classeExtra = "correct-fill disabled"; 
+            else if (i === respostasUsuario[indexAtual]) classeExtra = "wrong-fill disabled"; 
+            else classeExtra = "disabled"; 
+        }
+        html += `<div class="option ${classeExtra}" onclick="selecionar(${i})">${opt}</div>`;
+    });
+
+    document.getElementById('opcoes').innerHTML = html;
+    document.getElementById('voltar').style.visibility = indexAtual === 0 ? 'hidden' : 'visible';
+    document.getElementById('avancar').classList.toggle('hidden', indexAtual === questoesAtuais.length - 1);
+    document.getElementById('finalizar').classList.toggle('hidden', indexAtual !== questoesAtuais.length - 1);
+    atualizarPlacarAoVivo();
+}
+
+function selecionar(i) {
+    if (respostasUsuario[indexAtual] === null) {
+        respostasUsuario[indexAtual] = i;
+        mostrarQuestao(); 
+        atualizarPlacarAoVivo();
+    }
+}
+
+function atualizarPlacarAoVivo() {
+    let acertos = 0;
+    let erros = 0;
+    respostasUsuario.forEach((resp, i) => {
+        if (resp !== null) {
+            if (resp === questoesAtuais[i].r) acertos++;
+            else erros++;
+        }
+    });
+    document.getElementById('count-correct').innerText = acertos;
+    document.getElementById('count-wrong').innerText = erros;
+}
+
+function mudarQuestao(p) {
+    indexAtual += p;
+    mostrarQuestao();
+}
+
+function salvarEPausar() {
+    const dados = { questoes: questoesAtuais, index: indexAtual, respostas: respostasUsuario };
+    localStorage.setItem('progressoDouglas', JSON.stringify(dados));
+    alert("Progresso salvo!");
+    location.reload();
+}
+
+function sairSemSalvar() {
+    if(confirm("Sair agora?")) location.reload();
+}
+
+function retomarSimulado() {
+    const salvo = JSON.parse(localStorage.getItem('progressoDouglas'));
+    if (salvo) {
+        questoesAtuais = salvo.questoes;
+        indexAtual = salvo.index;
+        respostasUsuario = salvo.respostas;
+        exibirQuiz();
+    }
+}
+
+function verResultado() {
+    localStorage.removeItem('progressoDouglas');
+    document.getElementById('quiz').classList.add('hidden');
+    document.getElementById('resultado').classList.remove('hidden');
+    let acertos = 0;
+    let html = "";
+    let listaErros = JSON.parse(localStorage.getItem('bancoErrosAcumulados') || "[]");
+
+    questoesAtuais.forEach((q, i) => {
+        const acertou = respostasUsuario[i] === q.r;
+        if(acertou) {
+            acertos++;
+            listaErros = listaErros.filter(item => item.q !== q.q);
+        } else {
+            if (!listaErros.find(item => item.q === q.q)) listaErros.push(q);
+        }
+        html += `<div class="result-card"><p><strong>${i+1}. ${q.q}</strong></p><p>Sua Resposta: <span class="${acertou?'correct':'wrong'}">${respostasUsuario[i]!==null?q.o[respostasUsuario[i]]:'Vazio'}</span></p>${!acertou?`<p>Correta: <span class="correct">${q.o[q.r]}</span></p>`:''}</div>`;
+    });
+
+    localStorage.setItem('bancoErrosAcumulados', JSON.stringify(listaErros));
+    document.getElementById('placar').innerText = `Total: ${acertos} de ${questoesAtuais.length}`;
+    document.getElementById('detalhes').innerHTML = html;
+}
+
+function limparApenasErros() {
+    if(confirm("Zerar banco de erros?")) {
+        localStorage.removeItem('bancoErrosAcumulados');
+        location.reload();
+    }
+}
+
+function resetTotal() {
+    if(confirm("Zerar tudo?")) {
+        localStorage.clear();
+        location.reload();
+    }
+}
+</script>
+
+<footer style="text-align: center; padding: 20px; font-family: sans-serif; color: var(--text-secondary);">
+    <p>Simulado de Partícula Magnética &copy; 2026 | <strong>Douglas Djands</strong></p>
+<p>Feito para meu amigo<b>Jagunço🤿</b></p>
+
+</footer>
+</body>
+</html>
